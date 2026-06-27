@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIFA World Cup 26 Mafia Card Maker</title>
+<script src="https://cdn.jsdelivr.net/npm/modern-screenshot@4.4.39/dist/index.js"></script>
+<style>
+/*__FONTS__*/
+:root{
+  --f-disp:'FWC2026','Saira Extra Condensed',Arial Narrow,sans-serif;
+  --f-cond:'FWC2026 Cond','Saira Extra Condensed','Arial Narrow',sans-serif;
+  --f-head:'Archivo',system-ui,sans-serif;
+  --f-body:'FIFA Sans','Hanken Grotesk',system-ui,sans-serif;
+  --bg:#0d0f14; --panel:#161a22; --panel2:#1e2430; --line:#2c3340;
+  --ink:#e8ebf0; --mut:#9aa3b2; --field:#0f1218; --lime:#c6ff3a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);
+  display:grid;grid-template-columns:386px 1fr;height:100vh;overflow:hidden}
+
+/* ---------- controls ---------- */
+.controls{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;min-height:0}
+.cHead{flex:none;padding:16px 16px 8px}
+.cHead h2{font-family:var(--f-head);font-weight:800;font-size:15px;letter-spacing:.03em;text-transform:uppercase;margin:0 0 2px}
+.cHead .sub{color:var(--mut);font-size:12px;margin:0}
+.cBody{flex:1;min-height:0;overflow-y:auto;padding:10px 16px 18px}
+.cFoot{flex:none;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel);display:flex;gap:8px}
+.cFoot .btn{flex:1}
+
+.grp{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);overflow:hidden}
+.grp summary{list-style:none;cursor:pointer;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--f-head);font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c2cad6;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .car{width:15px;height:15px;transition:transform .18s ease;stroke:var(--mut);flex:none}
+.grp[open] summary .car{transform:rotate(180deg)}
+.grp .gb{padding:2px 13px 13px}
+
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+label.f{display:block;margin:0 0 10px}
+label.f>span{display:block;font-size:11px;color:var(--mut);margin:0 0 4px}
+input[type=text],textarea,select{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;outline:none}
+input[type=text]:focus,textarea:focus,select:focus{border-color:#4a5568}
+textarea{resize:vertical;min-height:52px;line-height:1.35}
+input[type=file]{font-size:11px;color:var(--mut);width:100%}
+input[type=file]::file-selector-button{background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:7px;padding:5px 9px;margin-right:8px;cursor:pointer;font-size:11px}
+input[type=range]{width:100%;accent-color:var(--lime);margin:2px 0}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;background:var(--field);border:1px solid var(--line);color:var(--mut);min-width:0;
+  border-radius:8px;padding:8px 6px;cursor:pointer;font-family:var(--f-head);font-weight:800;font-size:11.5px;letter-spacing:.03em}
+.seg button.on{background:#28324a;border-color:#5566aa;color:#dfe6f5}
+.seg.al button.on[data-al=town]{background:#0f3a28;border-color:#1fa85a;color:#7df0b4}
+.seg.al button.on[data-al=mafia]{background:#3a0f12;border-color:#e5202b;color:#ff9aa0}
+.seg.al button.on[data-al=third]{background:#3a2a0a;border-color:#e8990a;color:#ffce7a}
+.btnrow{display:flex;gap:8px;align-items:center;margin-top:2px}
+.mini{font-size:11px;color:var(--mut);background:none;border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer}
+.mini:hover{color:var(--ink);border-color:#4a5568}
+.addbtn{width:100%;margin-top:10px;background:var(--field);border:1px dashed #3a4252;color:#aeb6c2;border-radius:8px;
+  padding:9px;cursor:pointer;font-family:var(--f-head);font-weight:700;font-size:12px;letter-spacing:.04em}
+.ab{border:1px solid var(--line);border-radius:10px;padding:11px;margin:0 0 10px;background:#1a202b}
+.ab .abhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 9px}
+.ab .abhead b{font-family:var(--f-head);font-weight:800;font-size:12px;color:#c9d2e0}
+.thumb{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.thumb img{width:38px;height:38px;border-radius:7px;object-fit:cover;border:1px solid var(--line)}
+.sizeRow{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.sizeRow span{font-size:11px;color:var(--mut);white-space:nowrap}
+.btn{display:block;width:100%;border:0;border-radius:10px;padding:12px;font-family:var(--f-head);font-weight:800;
+  font-size:13px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--lime);color:#0b1200}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.hint{font-size:11px;color:var(--mut);margin:8px 2px 0;line-height:1.4}
+
+/* ---------- stage ---------- */
+.stageWrap{position:relative;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(1200px 600px at 70% -10%,#1a2030,transparent),var(--bg)}
+.stage{transform-origin:center center}
+
+/* ================= CARD ================= */
+#card{
+  /* alignment colours */
+  --main:#11a64a;--light:#41c771;--deep:#0a6b30;
+  /* theme tokens (set per theme) */
+  --field-bg:var(--main);--band:#0b1430;--panel-bg:#fff;--panel-ink:#0b1430;--panel-sub:#3a4356;--hair-c:#e9ebef;
+  --chip-bg:var(--deep);--chip-ink:#fff;--accent-ink:var(--deep);--shield-name:#0b1430;
+  width:1200px;height:786px;position:relative;overflow:hidden;border-radius:20px;
+  background:var(--field-bg);color:var(--panel-ink);font-family:var(--f-body);isolation:isolate;
+  box-shadow:0 30px 80px rgba(0,0,0,.5)}
+/* alignment = a real FIFA host-city emblem (rasterized PNG, city name cropped off) +
+   that city's official colour palette. Town->Boston(green), Mafia->Kansas City(red),
+   Third->Houston(blue). The emblem is set as --markimg and drawn by .mark26 in every style. */
+#card.town{ --main:#25a651;--light:#4cc472;--deep:#166e37}
+#card.mafia{--main:#db341c;--light:#ef5a3c;--deep:#9c1410}
+#card.third{--main:#f3741d;--light:#fb9c4a;--deep:#b8480c}
+
+/* theme: VIBRANT - saturated colour field, GIANT 26 bleeding off the right, solid white dossier */
+#card.t-vibrant{--field-bg:var(--main);--band:var(--deep);--panel-bg:#fff;--panel-ink:#0b1430;--panel-sub:#3a4356;--hair-c:#e9ebef;--accent-ink:var(--deep)}
+#card.t-vibrant{background:var(--main)}
+/* theme: DARK - near-black, glowing colour 26 pulled inward, neon shield + glass dossier */
+#card.t-dark{--field-bg:#0a0d12;--band:#05070b;--panel-bg:rgba(16,21,30,.95);--panel-ink:#fff;--panel-sub:#c4ccd8;--hair-c:rgba(255,255,255,.1);
+  --chip-bg:var(--light);--chip-ink:#0b1430;--accent-ink:var(--light)}
+#card.t-dark{background:radial-gradient(880px 620px at 64% 40%,#161d29,#0a0d12 64%)}
+/* theme: CLASSIC - solid team-colour field, floating white bubble cards, visible 26 (example.png style) */
+#card.t-classic{--field-bg:var(--main);--band:var(--deep);--panel-bg:transparent;--panel-ink:#0b1430;--panel-sub:#3a4356;--hair-c:#e9ebef;--accent-ink:var(--deep)}
+#card.t-classic{background:var(--main)}
+/* theme: LIGHT - clean white squad-page, crisp emblem on the right, minimal opaque card */
+#card.t-light{--field-bg:#f2f3f5;--band:#0b1430;--panel-bg:#fff;--panel-ink:#0b1430;--panel-sub:#41495a;--hair-c:#dde0e6;--accent-ink:var(--deep)}
+#card.t-light{background:#f2f3f5}
+
+/* MODERN-ART BACKGROUND (the example.png intent): a few big soft tonal shapes in the
+   alignment palette, abstract and bold. NO logos, NO patterns, NO text. The white
+   ability cards (the hero) sit on top of these. */
+.geo,.stripes,.vig,.bignum,.mark26plaque,.mark26{display:none}
+/* the real FIFA-26 modern-art background (an <img>, export-safe), zoomed + anchored RIGHT
+   so the abstract tonal shapes sit on the empty right side (the left is busy with the shield). */
+.artbg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:right center;
+  transform:scale(1.55);transform-origin:right center;pointer-events:none}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none}
+#card.t-dark .scrim{background:rgba(8,11,16,.62)}
+#card.t-light .scrim{background:rgba(244,246,248,.76)}
+/* DARK style = see.jpg: near-black field + the colourful "26" tile mosaic, no photo bg.
+   the mosaic tucks a sliver behind the header AND footer bands (centred, taller than the body). */
+.module26{display:none;position:absolute;z-index:0;right:-96px;top:50%;transform:translateY(-50%);height:766px;width:auto;pointer-events:none;
+  filter:drop-shadow(0 0 40px rgba(0,0,0,.5))}
+#card.t-dark .module26{display:block}
+#card.t-dark .artbg,#card.t-dark .scrim{display:none}
+/* DARK field = near-black with a GREEN glow in the upper-right (see.jpg), faint dot texture. */
+#card.t-dark{background:radial-gradient(900px 640px at 82% 14%,color-mix(in srgb,var(--main) 52%,#06100b),color-mix(in srgb,var(--deep) 30%,#0a140f) 56%,#070b09 100%)}
+#card.t-dark::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45;
+  background:radial-gradient(rgba(255,255,255,.06) 1.4px,transparent 1.6px) 0 0/26px 26px}
+/* dark wash coming in from the LEFT so the role text (outside the glass) stays legible over the tiles */
+#card.t-dark::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(6,11,9,.94) 0%,rgba(6,11,9,.7) 26%,rgba(6,11,9,.18) 48%,transparent 62%)}
+/* only the ABILITIES sit in a dark glass card; the role block sits outside it on the field */
+#card.t-dark .glasswrap{background:rgba(8,13,11,.62);backdrop-filter:blur(9px) saturate(1.05);-webkit-backdrop-filter:blur(9px) saturate(1.05);
+  border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:18px 22px;box-shadow:0 20px 50px rgba(0,0,0,.55)}
+#card.t-dark .droleblock{text-shadow:0 2px 14px rgba(0,0,0,.7);margin-bottom:18px}
+#card.t-dark .playedby{color:#fff;font-size:15px;letter-spacing:.22em}
+#card.t-dark .playedby .pbl{opacity:.5}
+/* big clean condensed PLAYER NAME headline (see.jpg), with THE CAPO as the small secondary line */
+#card.t-dark .dname{display:block;font-family:var(--f-cond);font-weight:700;font-size:84px;line-height:.82;letter-spacing:.01em;
+  text-transform:uppercase;color:#fff;margin:5px 0 14px}
+#card.t-dark .rolerow{flex-direction:row;align-items:center;gap:15px}
+#card.t-dark .role{order:2;font-family:var(--f-cond);font-weight:700;font-size:28px;letter-spacing:.04em;color:#fff;margin:0}
+#card.t-dark .alchip{order:1;margin:0;font-size:13px;padding:6px 16px}
+#card.t-dark .pname{font-family:var(--f-cond);font-weight:700}
+#card.t-dark .ability .ahead b{font-family:var(--f-cond);font-weight:700;font-size:27px;letter-spacing:.02em}
+#card.t-dark .ability:first-child{border-top:0}
+/* NIGHT timing chip = transparent glass with grey/white text + hairline (see.jpg), not a solid block */
+#card.t-dark .ability .when{background:rgba(255,255,255,.07);color:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.26);font-weight:600;letter-spacing:.06em}
+#card.t-dark .topbar{border-bottom:3px solid var(--main)}
+#card.t-dark .wm b{color:#a3e635}
+/* shield drop shadow is DARK, not green; subtle alignment tint at the shield foot (see.jpg) */
+#card.t-dark .shieldSvg{filter:drop-shadow(0 26px 42px rgba(0,0,0,.6)) drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+#card.t-dark{--shield-foot:color-mix(in srgb,var(--main) 20%,#fff)}
+#card.t-dark .render{height:384px;top:22px}
+#card.t-dark .pname{font-size:43px}
+
+/* header */
+.topbar{position:absolute;left:0;right:0;top:0;height:56px;z-index:4;display:flex;align-items:center;padding:0 30px;gap:12px;background:var(--band)}
+.emblemBox{height:40px;display:flex;align-items:center}
+.emblemBox img{height:40px;width:auto;display:block}
+.wm{font-family:var(--f-disp);font-weight:900;font-size:21px;letter-spacing:.005em;color:#fff;line-height:1}
+.wm b{color:inherit}
+.wm sup{font-size:7px;vertical-align:super;color:rgba(255,255,255,.55);margin-left:1px}
+.edition{margin-left:auto;font-family:var(--f-head);font-weight:800;font-size:11px;letter-spacing:.16em;color:rgba(255,255,255,.78);text-transform:uppercase}
+
+/* body: supporting player shield (left) + the ABILITY CARDS as the hero (right) */
+.body{position:absolute;left:0;right:0;top:56px;bottom:60px;z-index:2;display:grid;grid-template-columns:322px 1fr;gap:30px;padding:22px 30px}
+
+/* shield */
+.pennant{position:relative;align-self:center;width:100%;height:560px}
+.shieldSvg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 16px 28px rgba(0,0,0,.3))}
+.flag{position:absolute;left:28px;top:26px;width:66px;height:44px;object-fit:cover;border-radius:5px;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:4;background:#ccc}
+.render{position:absolute;left:50%;top:30px;transform:translateX(-50%);height:354px;width:auto;z-index:3;object-fit:contain;object-position:bottom}
+.pfoot{position:absolute;left:9%;right:9%;bottom:46px;z-index:4;text-align:center}
+.pfoot .pname{font-family:var(--f-disp);font-weight:900;color:var(--shield-name);font-size:36px;line-height:.96;text-transform:uppercase}
+.pfoot .div{height:3px;width:48%;margin:11px auto;background:var(--main);border-radius:2px}
+.pfoot .ppos{font-family:var(--f-head);font-weight:800;font-size:12px;letter-spacing:.2em;color:#5a6478;text-transform:uppercase}
+.pfoot .ppill{display:inline-block;margin-top:12px;background:var(--chip-bg);color:var(--chip-ink);
+  font-family:var(--f-head);font-weight:800;font-size:11px;letter-spacing:.13em;text-transform:uppercase;padding:6px 15px;border-radius:20px}
+
+/* dossier: a compact role nameplate, then BIG white ability cards = the hero */
+.dossier{align-self:center;min-width:0}
+.dpanel{background:transparent;box-shadow:none;padding:0;display:flex;flex-direction:column}
+.droleblock{display:flex;flex-direction:column;align-self:flex-start;background:var(--deep);border-radius:16px;padding:12px 22px 14px;margin:0 0 16px;box-shadow:0 14px 32px rgba(0,0,0,.26)}
+.playedby{font-family:var(--f-head);font-weight:800;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.playedby .pbl{opacity:.6}
+.playedby .pbn{opacity:1}
+.dname{display:none}
+.rolerow{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.role{font-family:var(--f-disp);font-weight:900;font-size:46px;line-height:.9;text-transform:uppercase;color:#fff;margin:2px 0 0}
+.alchip{display:inline-block;align-self:flex-start;margin:10px 0 0;background:#fff;color:var(--deep);
+  font-family:var(--f-head);font-weight:900;font-size:11px;letter-spacing:.13em;text-transform:uppercase;padding:5px 14px;border-radius:20px}
+.ability{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:#fff;border-radius:22px;padding:17px 24px;margin-bottom:13px;box-shadow:0 16px 38px rgba(0,0,0,.24)}
+.ability.noic{grid-template-columns:1fr}
+.ability .ic{width:60px;height:60px;border-radius:50%;background:color-mix(in srgb,var(--main) 12%,#fff);display:grid;place-items:center;overflow:hidden;flex:none}
+.ability .ic img{width:100%;height:100%;object-fit:cover}
+.ability .ic svg{width:56%;height:56%;fill:var(--main)}
+.ability .ahead{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:0 0 4px}
+.ability .ahead b{font-family:var(--f-disp);font-weight:900;font-size:25px;letter-spacing:.005em;text-transform:uppercase;color:#0b1430}
+.ability .when{display:inline-flex;align-items:center;gap:5px;font-family:var(--f-head);font-weight:800;font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;padding:4px 11px;border-radius:20px;background:var(--deep);color:#fff}
+.ability .when svg{width:12px;height:12px;display:block;fill:currentColor}
+.ability p{margin:0;font-size:16px;line-height:1.46;color:#39424f}
+.wincons{display:flex;gap:12px;margin-top:3px}
+.wincon{flex:1;display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:10px 15px;box-shadow:0 12px 28px rgba(0,0,0,.2)}
+.wincon .tag{font-family:var(--f-head);font-weight:900;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:6px;flex:none}
+.wincon.gold .tag{background:linear-gradient(180deg,#f3d271,#cf9f37);color:#3a2a05}
+.wincon.silver .tag{background:linear-gradient(180deg,#e7ebf0,#b3bbc6);color:#222}
+.wincon .wt{font-size:13px;line-height:1.3;color:#27303f}
+/* ===== the 4 styles are DISTINCT compositions ===== */
+/* CLASSIC = his original card (example.png): the full vecteezy "26" art behind, floating white ability bubbles. */
+/* show the vecteezy "26" background exactly as-is, full-bleed, no zoom/crop */
+#card.t-classic .artbg{object-fit:cover;object-position:center;transform:none}
+#card.t-classic .scrim{background:transparent}
+#card.t-classic .topbar,#card.t-classic .footer{background:#0a0c0f}
+/* VIBRANT = Lionel_MESSI(1): solid alignment field + subtle tonal shapes, transparent chrome,
+   ONE white card holding the role block + ability rows, navy type + orange accents. */
+#card.t-vibrant{background:
+  radial-gradient(940px 620px at 80% -10%,color-mix(in srgb,var(--light) 26%,transparent),transparent 62%),
+  linear-gradient(150deg,color-mix(in srgb,var(--light) 26%,var(--main)) 0%,var(--main) 50%,color-mix(in srgb,var(--deep) 34%,var(--main)) 100%)}
+/* monochromatic background shapes (Lionel_MESSI(1)) with a soft sheen for depth */
+.vshapes{display:none;position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.vshapes span{position:absolute;display:block}
+#card.t-vibrant .vshapes{display:block}
+.vs1{top:-150px;right:-130px;width:680px;height:620px;border-radius:0 0 0 310px;
+  background:linear-gradient(205deg,color-mix(in srgb,var(--light) 34%,var(--main)),color-mix(in srgb,var(--light) 12%,var(--main)) 72%)}
+.vs2{bottom:-240px;right:-150px;width:570px;height:570px;border-radius:50%;
+  background:radial-gradient(circle at 36% 32%,color-mix(in srgb,var(--light) 44%,var(--main)),color-mix(in srgb,var(--light) 18%,var(--main)) 70%)}
+.vs3{bottom:-250px;left:-170px;width:520px;height:470px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,color-mix(in srgb,var(--deep) 8%,var(--main)),color-mix(in srgb,var(--deep) 22%,var(--main)))}
+#card.t-vibrant .artbg,#card.t-vibrant .module26{display:none}
+#card.t-vibrant .topbar,#card.t-vibrant .footer{background:transparent}
+#card.t-vibrant .wm b{color:#fff}
+/* the dossier becomes one white card */
+#card.t-vibrant .dpanel{background:#fff;border-radius:24px;padding:26px 30px;box-shadow:0 28px 66px rgba(0,0,0,.32)}
+#card.t-vibrant .droleblock{background:transparent;box-shadow:none;padding:0;border-radius:0;margin:0}
+#card.t-vibrant .playedby{color:#0b1430}
+#card.t-vibrant .playedby .pbl{color:var(--deep);opacity:1}
+#card.t-vibrant .role{color:#0b1430;font-size:52px}
+#card.t-vibrant .alchip{background:var(--main);color:#fff;margin-top:12px}
+#card.t-vibrant #vAbilities{background:transparent;box-shadow:none;border-radius:0;padding:0;margin-top:18px;border-top:1px solid #e9ebef}
+#card.t-vibrant .ability{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:16px 0;border-top:1px solid #e9ebef}
+#card.t-vibrant .ability:first-child{border-top:0}
+#card.t-vibrant .ability .ic{border-radius:14px;background:color-mix(in srgb,var(--main) 13%,#fff)}
+#card.t-vibrant .ability .when{background:var(--main);color:#fff}
+#card.t-vibrant .wincon{background:#f6f7f9;box-shadow:none;border:1px solid #e9ebef}
+/* DARK (see.jpg): near-black field, alignment shapes glow, white bubble cards lift off the dark. */
+/* DARK (see.jpg): white-text dossier directly on the dark field, green role bar, no white cards */
+#card.t-dark #vAbilities{background:transparent;box-shadow:none;border:0;padding:0}
+#card.t-dark .ability{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:15px 2px;border-top:1px solid rgba(255,255,255,.14)}
+#card.t-dark .ability .ahead b{color:#fff}
+#card.t-dark .ability p{color:#c2cad6}
+#card.t-dark .ability .ic{background:rgba(255,255,255,.09)}
+#card.t-dark .ability .ic svg{fill:var(--light)}
+#card.t-dark .droleblock{background:transparent;box-shadow:none;padding:0;border-radius:0;margin-bottom:14px}
+#card.t-dark .alchip{background:var(--main);color:#fff}
+#card.t-dark .wincon{background:rgba(255,255,255,.06);box-shadow:none;border:1px solid rgba(255,255,255,.14)}
+#card.t-dark .wincon .wt{color:#dfe6f0}
+/* LIGHT (the fifa.com website look): pale field, navy chrome, ONE flat white panel, minimal. */
+#card.t-light #vAbilities{background:#fff;border-radius:18px;padding:2px 24px;box-shadow:0 8px 22px rgba(13,20,40,.1);border:1px solid #e6e8ed}
+#card.t-light .ability{background:transparent;box-shadow:none;margin:0;border-radius:0;padding:15px 0;border-top:1px solid #ebedf0}
+#card.t-light .ability:first-child{border-top:0}
+#card.t-light .ability .ahead b{font-size:22px}
+#card.t-light .droleblock{background:#0b1430}
+#card.t-light .wincon{box-shadow:0 6px 16px rgba(13,20,40,.1);border:1px solid #e6e8ed}
+#card.t-light .ability .ic{background:color-mix(in srgb,var(--main) 12%,#fff);border:1px solid var(--hair-c)}
+#card.t-light .wincons{border-top:2px solid var(--hair-c)}
+#card.t-light .role{letter-spacing:-.005em}
+
+/* footer */
+.footer{position:absolute;left:0;right:0;bottom:0;height:60px;background:var(--band);z-index:4;display:flex;flex-direction:column;justify-content:center}
+.footRow{height:26px;display:flex;align-items:center;padding:0 30px}
+.footRow .fifaImg{height:13px;width:auto;display:block;opacity:.95}
+.footRow .socials{margin-left:auto;display:flex;gap:13px;align-items:center;color:rgba(255,255,255,.85)}
+.footRow .socials svg{width:14px;height:14px;display:block;fill:currentColor}
+.partners{flex:1;display:flex;align-items:center;justify-content:center;gap:22px;border-top:1px solid rgba(255,255,255,.16);padding:0 18px}
+.partners .plab{font-family:var(--f-head);font-weight:800;font-size:9px;letter-spacing:.22em;color:rgba(255,255,255,.68);text-transform:uppercase;white-space:nowrap}
+.partners .lg{display:flex;align-items:center;color:#fff}
+.partners .lg svg{height:19px;width:auto;display:block;fill:currentColor;opacity:.96}
+.partners .lg.txt{font-family:var(--f-head);font-weight:700;font-size:15px;letter-spacing:.01em;color:#fff}
+.hide{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="cHead">
+    <h2>WC 26 Mafia Card Maker</h2>
+    <p class="sub">Pick a player, fill the role, choose a style, download.</p>
+  </div>
+  <div class="cBody">
+
+    <details class="grp" open>
+      <summary>Card style <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <div class="seg" id="styleSeg">
+          <button data-st="t-classic" class="on">Classic</button>
+          <button data-st="t-vibrant">Vibrant</button>
+          <button data-st="t-dark">Dark</button>
+          <button data-st="t-light">Light</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Pick a player <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <div class="row">
+          <label class="f"><span>Country</span><select id="country"></select></label>
+          <label class="f"><span>Player</span><select id="playerSel"></select></label>
+        </div>
+        <span style="font-size:11px;color:var(--mut)">Photo</span>
+        <div class="btnrow">
+          <input type="file" id="renderUp" accept="image/*">
+          <button class="mini" id="resetPhoto">Reset</button>
+        </div>
+        <p class="hint">Picking a player fills name, position, flag and the official photo. Edit anything after.</p>
+      </div>
+    </details>
+
+    <details class="grp">
+      <summary>Identity <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <label class="f"><span>Character / footballer</span><input type="text" id="char"></label>
+        <div class="row">
+          <label class="f"><span>Player (forum name)</span><input type="text" id="player" value="Palin"></label>
+          <label class="f"><span>Role</span><input type="text" id="role" value="The Capo"></label>
+        </div>
+        <label class="f"><span>Position</span>
+          <select id="position"><option>Goalkeeper</option><option>Defender</option><option>Midfielder</option><option>Forward</option><option>Manager</option><option value="">None</option></select>
+        </label>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Alignment <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <div class="seg al" id="alignSeg">
+          <button data-al="town" class="on">Town</button>
+          <button data-al="mafia">Mafia</button>
+          <button data-al="third">Third Party</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Abilities <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <div id="abList"></div>
+        <button class="addbtn" id="addAb">+ Add ability</button>
+      </div>
+    </details>
+
+    <details class="grp">
+      <summary>Win conditions <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <label class="f"><span>Gold win</span><textarea id="goldWin" placeholder="Leave blank to hide"></textarea></label>
+        <label class="f"><span>Silver win</span><textarea id="silverWin" placeholder="Leave blank to hide"></textarea></label>
+      </div>
+    </details>
+
+    <details class="grp">
+      <summary>Header <svg class="car" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+      <div class="gb">
+        <label class="f"><span>Edition tag</span><input type="text" id="edition" value="Role Card"></label>
+      </div>
+    </details>
+
+  </div>
+  <div class="cFoot">
+    <button class="btn" id="download">Download PNG</button>
+  </div>
+</div>
+
+<div class="stageWrap">
+  <div class="stage" id="stage">
+    <div id="card" class="t-classic town">
+      <img class="artbg" id="vBg" alt=""><div class="scrim"></div>
+      <div class="module26" id="vModule"></div>
+      <div class="vshapes" aria-hidden="true"><span class="vs1"></span><span class="vs2"></span><span class="vs3"></span></div>
+
+      <header class="topbar">
+        <div class="emblemBox"><img id="vEmblem" alt=""></div>
+        <div class="wm">FIFA WORLD CUP <b>26</b><sup>TM</sup></div>
+        <div class="edition" id="vEdition">ROLE CARD</div>
+      </header>
+
+      <div class="body">
+        <div class="pennant">
+          <svg class="shieldSvg" viewBox="0 0 312 483" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="shieldGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff"/>
+                <stop offset="0.62" stop-color="#ffffff"/>
+                <stop offset="1" stop-color="var(--shield-foot,#ffffff)"/>
+              </linearGradient>
+            </defs>
+            <path d="M1 29.0484C1 21.7037 6.27366 15.5079 13.5238 14.4178C41.6096 10.1951 107.863 1.03396 154.143 1.0001C201.691 0.965304 269.826 10.2227 298.43 14.4477C305.7 15.5215 311 21.7258 311 29.0863V436.52C311 443.574 306.084 449.668 299.189 451.168L157.574 481.977L12.8723 451.126C5.94809 449.65 1 443.546 1 436.468L1 232.458L1 29.0484Z" fill="url(#shieldGrad)" stroke="#e3e6eb" stroke-width="2"/>
+          </svg>
+          <img class="flag" id="vFlag" alt="" crossorigin="anonymous">
+          <img class="render" id="vRender" alt="" crossorigin="anonymous">
+          <div class="pfoot">
+            <div class="pname" id="vPname">LIONEL MESSI</div>
+            <div class="div"></div>
+            <div class="ppos" id="vPpos">FORWARD</div>
+          </div>
+        </div>
+
+        <div class="dossier">
+          <div class="dpanel">
+            <div class="droleblock">
+              <div class="playedby" id="vPlayedby"><span class="pbl">PLAYED BY</span> <span class="pbn" id="vBy">PALIN</span></div>
+              <div class="dname" id="vDname">LIONEL MESSI</div>
+              <div class="rolerow">
+                <div class="role" id="vRole">THE CAPO</div>
+                <span class="alchip" id="vAl">TOWN</span>
+              </div>
+            </div>
+            <div class="glasswrap">
+              <div id="vAbilities"></div>
+              <div class="wincons" id="vWincons">
+                <div class="wincon gold" id="vGoldWrap"><span class="tag">Gold</span><span class="wt" id="vGold"></span></div>
+                <div class="wincon silver" id="vSilverWrap"><span class="tag">Silver</span><span class="wt" id="vSilver"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <div class="footRow">
+          <img class="fifaImg" id="vFifa" alt="FIFA">
+          <div class="socials">
+            <svg viewBox="0 0 24 24"><path d="M18.9 1.2h3.7l-8 9.1 9.4 12.4h-7.4l-5.8-7.6-6.6 7.6H.5l8.5-9.8L0 1.2h7.6l5.2 6.9 6.1-6.9zm-1.3 19.3h2L7 3.3H4.9l12.7 17.2z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.1.4.3 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.1-1 .3-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.1-.4-.3-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.1 1-.3 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 3.2A6.6 6.6 0 1 0 18.6 12 6.6 6.6 0 0 0 12 5.4zm0 10.9A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3zm6.8-11.2a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.2 3.6z"/></svg>
+          </div>
+        </div>
+        <div class="partners">
+          <span class="plab">FIFA Partners</span>
+          <span id="vPartners" style="display:flex;align-items:center;gap:22px"></span>
+        </div>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = __PLAYERS_JSON__;
+const EMBLEM = "__EMBLEM__";
+const FIFAWORD = "__FIFAWORD__";
+const LOGOS = __LOGOS__;
+const $ = s => document.querySelector(s);
+const card = $('#card');
+$('#vEmblem').src = EMBLEM;
+$('#vFifa').src = FIFAWORD;
+
+$('#vPartners').innerHTML = ['adidas','aramco','cocacola','hyundai','kia','lenovo','qatarairways','visa']
+  .map(k=> k==='aramco' ? '<span class="lg txt">aramco</span>' : `<span class="lg">${LOGOS[k]||''}</span>`).join('');
+
+const ICONS=__ICONS__;
+const WHENS={Night:ICONS.moon,Day:ICONS.sun,Passive:ICONS.bolt,Any:ICONS.bolt};
+const BALL=ICONS.futbol;
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const flagURL=c=>`https://flagcdn.com/w160/${c}.png`;
+const imgURL=base=>base+'?io=transform:fill,width:520,gravity:top&quality=90';
+
+/* ---------- selects ---------- */
+const countrySel=$('#country'), playerSel=$('#playerSel');
+Object.keys(DATA).sort((a,b)=>DATA[a].name.localeCompare(DATA[b].name)).forEach(slug=>{
+  const o=document.createElement('option');o.value=slug;o.textContent=DATA[slug].name;countrySel.appendChild(o);
+});
+function fillPlayers(slug,pick){
+  playerSel.innerHTML='';
+  DATA[slug].players.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.n+'  ('+p.p+')';playerSel.appendChild(o);});
+  const co=document.createElement('option');co.value='custom';co.textContent='-- custom --';playerSel.appendChild(co);
+  if(pick!=null) playerSel.value=pick;
+}
+function loadImg(url,el){el.crossOrigin='anonymous';el.onload=()=>{el.onload=null;imgToData(el);};el.src=url;}
+function currentRenderURL(){const p=DATA[countrySel.value].players[+playerSel.value];return p?imgURL(p.img):null;}
+function applyPlayer(){
+  const slug=countrySel.value;
+  loadImg(flagURL(DATA[slug].flag),$('#vFlag'));
+  if(playerSel.value==='custom') return;
+  const p=DATA[slug].players[+playerSel.value];
+  if(!p) return;
+  $('#char').value=p.n;
+  if(p.p){const opt=[...$('#position').options].find(o=>o.value===p.p);$('#position').value=opt?p.p:'';}
+  loadImg(imgURL(p.img),$('#vRender'));
+  sync();
+}
+countrySel.addEventListener('change',()=>{fillPlayers(countrySel.value,0);applyPlayer();});
+playerSel.addEventListener('change',applyPlayer);
+$('#resetPhoto').addEventListener('click',()=>{const u=currentRenderURL();if(u)loadImg(u,$('#vRender'));$('#renderUp').value='';});
+
+/* ---------- abilities ---------- */
+let abState=[{name:'Free Kick Vision',when:'Night',text:'Each night, choose a player. You learn whether they are aligned with the Mafia.',img:'',icon:'ball',size:46}];
+const abList=$('#abList');
+function renderAbEditors(){
+  abList.innerHTML='';
+  abState.forEach((a,i)=>{
+    const w=document.createElement('div');w.className='ab';
+    w.innerHTML=`<div class="abhead"><b>Ability ${i+1}</b><button class="mini" data-del="${i}">remove</button></div>
+      <label class="f"><span>Name</span><input type="text" data-k="name" data-i="${i}"></label>
+      <label class="f"><span>Timing</span><select data-k="when" data-i="${i}"><option>Night</option><option>Day</option><option>Passive</option><option>Any</option></select></label>
+      <label class="f"><span>Description</span><textarea data-k="text" data-i="${i}"></textarea></label>
+      <span style="font-size:11px;color:var(--mut)">Icon</span>
+      <div class="seg" data-icon="${i}" style="margin:4px 0 8px">
+        <button data-mode="ball">Ball</button><button data-mode="image">Image</button><button data-mode="none">None</button>
+      </div>
+      <div data-imgwrap="${i}" style="display:none">
+        <div class="thumb" data-thumb="${i}" style="display:none"><img data-thumbimg="${i}"><button class="mini" data-clearimg="${i}">Remove image</button></div>
+        <input type="file" data-img="${i}" accept="image/*" style="margin-bottom:8px">
+      </div>
+      <div class="sizeRow" data-sizerow="${i}"><span>Size</span><input type="range" min="34" max="132" data-size="${i}"><span data-sizeval="${i}"></span></div>`;
+    abList.appendChild(w);
+    w.querySelector('[data-k="name"]').value=a.name;
+    w.querySelector('[data-k="when"]').value=a.when;
+    w.querySelector('[data-k="text"]').value=a.text;
+    w.querySelector(`[data-size="${i}"]`).value=a.size;
+    syncAbEditor(i);
+  });
+  $('#addAb').style.display=abState.length>=4?'none':'';
+}
+function syncAbEditor(i){
+  const a=abState[i];
+  abList.querySelectorAll(`[data-icon="${i}"] button`).forEach(b=>b.classList.toggle('on',b.dataset.mode===a.icon));
+  const iw=abList.querySelector(`[data-imgwrap="${i}"]`); if(iw) iw.style.display=a.icon==='image'?'':'none';
+  const th=abList.querySelector(`[data-thumb="${i}"]`); if(th){th.style.display=a.img?'flex':'none';const ti=abList.querySelector(`[data-thumbimg="${i}"]`);if(ti&&a.img)ti.src=a.img;}
+  const sr=abList.querySelector(`[data-sizerow="${i}"]`); if(sr) sr.style.display=a.icon==='none'?'none':'flex';
+  const sv=abList.querySelector(`[data-sizeval="${i}"]`); if(sv) sv.textContent=a.size+'px';
+}
+abList.addEventListener('input',e=>{const t=e.target;
+  if(t.dataset.k){abState[+t.dataset.i][t.dataset.k]=t.value;renderAbilities();}
+  if(t.dataset.size!=null){abState[+t.dataset.size].size=+t.value;syncAbEditor(+t.dataset.size);renderAbilities();}
+});
+abList.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.img!=null){const f=t.files[0];if(f)readImg(f,d=>{abState[+t.dataset.img].img=d;abState[+t.dataset.img].icon='image';syncAbEditor(+t.dataset.img);renderAbilities();});}
+});
+abList.addEventListener('click',e=>{
+  const del=e.target.closest('[data-del]'); if(del){abState.splice(+del.dataset.del,1);if(!abState.length)abState.push({name:'',when:'Night',text:'',img:'',icon:'ball',size:46});renderAbEditors();renderAbilities();return;}
+  const mode=e.target.closest('[data-icon] [data-mode]'); if(mode){const i=+mode.closest('[data-icon]').dataset.icon;abState[i].icon=mode.dataset.mode;syncAbEditor(i);renderAbilities();return;}
+  const clr=e.target.closest('[data-clearimg]'); if(clr){const i=+clr.dataset.clearimg;abState[i].img='';abState[i].icon='ball';syncAbEditor(i);renderAbilities();return;}
+});
+$('#addAb').addEventListener('click',()=>{if(abState.length<4){abState.push({name:'',when:'Night',text:'',img:'',icon:'ball',size:46});renderAbEditors();renderAbilities();}});
+function renderAbilities(){
+  const box=$('#vAbilities');box.innerHTML='';
+  abState.forEach(a=>{
+    if(!a.name&&!a.text)return;
+    const el=document.createElement('div');
+    const showIc=a.icon!=='none';
+    el.className='ability'+(showIc?'':' noic');
+    let ic='';
+    if(showIc){const inner=(a.icon==='image'&&a.img)?`<img src="${a.img}">`:BALL;
+      ic=`<div class="ic" style="width:${a.size}px;height:${a.size}px">${inner}</div>`;}
+    const when=a.when?`<span class="when">${WHENS[a.when]||''}${a.when}</span>`:'';
+    el.innerHTML=`${ic}<div><div class="ahead"><b>${esc(a.name)}</b>${when}</div><p>${esc(a.text)}</p></div>`;
+    box.appendChild(el);
+  });
+}
+
+/* ---------- misc fields ---------- */
+function syncWincons(){
+  const g=$('#goldWin').value.trim(),s=$('#silverWin').value.trim();
+  $('#vGold').textContent=g;$('#vSilver').textContent=s;
+  $('#vGoldWrap').classList.toggle('hide',!g);$('#vSilverWrap').classList.toggle('hide',!s);
+  $('#vWincons').classList.toggle('hide',!g&&!s);
+}
+/* shrink a heading so its widest word fits the available width (long names like SHAFFELBURG) */
+function fitWrap(el,avail,minPx){
+  if(!el||!avail||avail<10)return;
+  el.style.fontSize='';
+  let s=parseFloat(getComputedStyle(el).fontSize)||24;
+  const cs=getComputedStyle(el);
+  const probe=document.createElement('span');
+  probe.style.cssText='position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-family:'+cs.fontFamily+';font-weight:'+cs.fontWeight+';font-style:'+cs.fontStyle+';letter-spacing:'+cs.letterSpacing+';text-transform:'+cs.textTransform;
+  document.body.appendChild(probe);
+  const words=(el.textContent||'').trim().split(/\s+/).filter(Boolean);
+  const widest=size=>{probe.style.fontSize=size+'px';let w=0;for(const word of words){probe.textContent=word;if(probe.offsetWidth>w)w=probe.offsetWidth;}return w;};
+  let guard=0;
+  while(s>minPx&&widest(s)>avail&&guard++<90)s-=1;
+  el.style.fontSize=s+'px';
+  probe.remove();
+}
+function fitNames(){
+  const pn=$('#vPname');
+  if(pn&&pn.parentElement)fitWrap(pn,pn.parentElement.clientWidth,18);
+  const dp=document.querySelector('#card .dpanel');
+  if(dp){const c=getComputedStyle(dp);const w=dp.clientWidth-parseFloat(c.paddingLeft)-parseFloat(c.paddingRight)-2;
+    fitWrap($('#vRole'),w,20);fitWrap($('#vDname'),w,30);}
+}
+function sync(){
+  const ch=$('#char').value,pl=$('#player').value,ro=$('#role').value,po=$('#position').value;
+  $('#vPname').textContent=ch||' ';
+  $('#vDname').textContent=ch||' ';
+  $('#vRole').textContent=ro||' ';
+  $('#vPpos').textContent=po||'';$('#vPpos').classList.toggle('hide',!po);
+  $('#vBy').textContent=pl?pl.toUpperCase():'';
+  $('#vPlayedby').classList.toggle('hide',!pl);
+  $('#vEdition').textContent=($('#edition').value||'').toUpperCase();
+  syncWincons();renderAbilities();fitNames();
+}
+['char','player','role','goldWin','silverWin','edition'].forEach(id=>$('#'+id).addEventListener('input',sync));
+$('#position').addEventListener('change',sync);
+$('#renderUp').addEventListener('change',e=>{const f=e.target.files[0];if(f)readImg(f,d=>$('#vRender').src=d);});
+function readImg(file,cb){const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file);}
+
+/* ---------- style + alignment ---------- */
+const AL={town:'TOWN',mafia:'MAFIA',third:'THIRD PARTY'};
+const BG={town:"__BG_TOWN__",mafia:"__BG_MAFIA__",third:"__BG_THIRD__"};
+$('#vBg').src=BG.town;
+/* the colourful "26" tile-mosaic (rounded squares + quarter-circles), for the Dark style */
+const M_PAL={
+  town:['#16a34a','#3fbf6f','#86d96f','#2f6bff','#a3e635','#1aa35a','#1e7a44'],
+  mafia:['#dc2626','#f5612b','#fb6f92','#f5a524','#e0341c','#c1184a','#9c1410'],
+  third:['#e0a31e','#f5b942','#f59e0b','#fcd34d','#fb923c','#d98014','#b87708']
+};
+const M_TWO=["1111","0001","0001","1111","1000","1000","1111"], M_SIX=["1111","1000","1000","1111","1001","1001","1111"];
+function mhash(i){i=(i^61)^(i>>>16);i+=i<<3;i^=i>>>4;i=Math.imul(i,0x27d4eb2d);i^=i>>>15;return i>>>0;}
+function mcell(x,y,U,fill,q,corner){
+  if(!q)return `<rect x="${x}" y="${y}" width="${U}" height="${U}" rx="12" fill="${fill}"/>`;
+  const r=U;let d;
+  if(corner===0)d=`M${x+r},${y} H${x+U} V${y+U} H${x} V${y+r} A${r},${r} 0 0 1 ${x+r},${y} Z`;
+  else if(corner===1)d=`M${x},${y} H${x+U-r} A${r},${r} 0 0 1 ${x+U},${y+r} V${y+U} H${x} Z`;
+  else if(corner===2)d=`M${x},${y} H${x+U} V${y+U-r} A${r},${r} 0 0 1 ${x+U-r},${y+U} H${x} Z`;
+  else d=`M${x},${y} H${x+U} V${y+U} H${x+r} A${r},${r} 0 0 1 ${x},${y+U-r} V${y} Z`;
+  return `<path d="${d}" fill="${fill}"/>`;
+}
+function mdigit(grid,ox,U,g,pal,seed){let s='';for(let r=0;r<7;r++)for(let c=0;c<4;c++){
+  if(grid[r][c]!=='1')continue;const id=seed*1000+r*10+c;
+  s+=mcell(ox+c*(U+g),r*(U+g),U,pal[mhash(id)%pal.length],(mhash(id*7+3)%100)<44,mhash(id*13+5)%4);}return s;}
+function buildModule26(al){const U=100,g=14,dw=4*U+3*g,DG=64,W=2*dw+DG,H=7*U+6*g,pal=M_PAL[al]||M_PAL.town;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`+mdigit(M_TWO,0,U,g,pal,1)+mdigit(M_SIX,dw+DG,U,g,pal,2)+`</svg>`;}
+let curStyle='t-classic',curAlign='town';
+function applyClass(){card.className=curStyle+' '+curAlign;$('#vModule').innerHTML=buildModule26(curAlign);fitNames();}
+function setAlign(al){curAlign=al;applyClass();$('#vBg').src=BG[al];$('#alignSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.al===al));$('#vAl').textContent=AL[al];}
+function setStyle(st){curStyle=st;applyClass();$('#styleSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.st===st));}
+$('#alignSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setAlign(b.dataset.al);});
+$('#styleSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setStyle(b.dataset.st);});
+
+/* ---------- export ---------- */
+function imgToData(el){
+  try{
+    if(!el.getAttribute('src')||el.src.startsWith('data:'))return;
+    if(!el.complete||!el.naturalWidth)return;
+    const c=document.createElement('canvas');c.width=el.naturalWidth;c.height=el.naturalHeight;
+    c.getContext('2d').drawImage(el,0,0);
+    el.removeAttribute('crossorigin');el.src=c.toDataURL('image/png');
+  }catch(e){}
+}
+function bake(el){imgToData(el);return new Promise(res=>{if(!el.getAttribute('src')||(el.complete&&el.naturalWidth))return res();el.onload=()=>res();el.onerror=()=>res();setTimeout(res,3000);});}
+async function renderPng(){
+  await document.fonts.ready;
+  await Promise.all([bake($('#vRender')),bake($('#vFlag'))]);
+  return window.modernScreenshot.domToPng(card,{scale:1.3,backgroundColor:null});
+}
+function fit(){
+  const w=document.querySelector('.stageWrap'),pad=48;
+  const s=Math.min((w.clientWidth-pad)/1200,(w.clientHeight-pad)/786,1);
+  $('#stage').style.transform=`scale(${s})`;
+}
+window.addEventListener('resize',fit);
+$('#download').addEventListener('click',async()=>{
+  const btn=$('#download'),old=btn.textContent;btn.textContent='Rendering...';
+  const prev=$('#stage').style.transform;$('#stage').style.transform='scale(1)';
+  try{
+    const dataUrl=await renderPng();
+    const a=document.createElement('a');
+    a.download=(($('#char').value||'card').replace(/[^a-z0-9]+/gi,'_'))+'.png';
+    a.href=dataUrl;a.click();
+  }catch(err){alert('Render failed: '+err.message);}
+  $('#stage').style.transform=prev;btn.textContent=old;
+});
+
+/* ---------- init ---------- */
+renderAbEditors();
+countrySel.value='argentina';
+fillPlayers('argentina',0);
+const mi=DATA.argentina.players.findIndex(p=>/messi/i.test(p.n));
+playerSel.value=mi>=0?mi:0;
+setStyle('t-classic');setAlign('town');
+applyPlayer();
+sync();
+fit();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitNames);
+
+const h=location.hash.replace('#','');
+h.split(/[\/,]/).forEach(tok=>{
+  if(['town','mafia','third'].includes(tok))setAlign(tok);
+  if(tok.startsWith('t-'))setStyle(tok);
+});
+if(h==='selftest'||h==='exportview'){setTimeout(async()=>{
+  $('#stage').style.transform='scale(1)';
+  const log=t=>{let o=document.getElementById('selftest');if(!o){o=document.createElement('div');o.id='selftest';document.body.appendChild(o);}o.textContent=t;};
+  try{
+    const d=await Promise.race([renderPng(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT12s')),12000))]);
+    if(h==='exportview'){document.body.innerHTML='<img id="ev" style="width:1200px" src="'+d+'">';}else{log('OK '+d.length);}
+  }catch(e){log('ERR '+e.message);}},2800);}
+</script>
+</body>
+</html>

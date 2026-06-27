@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mafia Card Maker — SVG</title>
+<style>
+:root{
+  --bg:#0d0f14; --panel:#161a22; --panel2:#1e2430; --line:#2c3340;
+  --ink:#e8ebf0; --mut:#9aa3b2; --field:#0f1218; --lime:#c6ff3a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,sans-serif;
+  display:grid;grid-template-columns:360px 1fr;height:100vh;overflow:hidden}
+
+/* ---- controls ---- */
+.controls{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;min-height:0}
+.cHead{flex:none;padding:16px 16px 8px}
+.cHead h2{font-weight:800;font-size:15px;letter-spacing:.03em;text-transform:uppercase;margin:0 0 2px}
+.cHead .sub{color:var(--mut);font-size:12px;margin:0}
+.cBody{flex:1;min-height:0;overflow-y:auto;padding:10px 16px 18px}
+.cFoot{flex:none;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel)}
+
+.grp{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);overflow:hidden}
+.grp summary{list-style:none;cursor:pointer;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;
+  font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c2cad6;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp .gb{padding:2px 13px 13px}
+label.f{display:block;margin:0 0 10px}
+label.f>span{display:block;font-size:11px;color:var(--mut);margin:0 0 4px}
+input[type=text],textarea,select{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:#4a5568}
+textarea{resize:vertical;min-height:60px;line-height:1.35}
+input[type=file]{font-size:11px;color:var(--mut);width:100%}
+input[type=file]::file-selector-button{background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:7px;padding:5px 9px;margin-right:8px;cursor:pointer;font-size:11px}
+.mini{font-size:11px;color:var(--mut);background:none;border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer}
+.btn{display:block;width:100%;border:0;border-radius:10px;padding:12px;font-weight:800;
+  font-size:13px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--lime);color:#0b1200}
+.btn:active{transform:translateY(1px)}
+.hint{font-size:11px;color:var(--mut);margin:8px 2px 0;line-height:1.4}
+.abcard{border:1px solid var(--line);border-radius:10px;padding:11px;margin:0 0 10px;background:#1a202b}
+.abcard b{display:block;font-size:12px;color:#c9d2e0;margin:0 0 8px}
+
+/* ---- stage ---- */
+.stageWrap{position:relative;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(1200px 600px at 70% -10%,#1a2030,transparent),var(--bg)}
+#stage{width:100%;max-width:1180px}
+#stage svg{width:100%;height:auto;display:block;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="cHead">
+    <h2>Mafia Card Maker</h2>
+    <p class="sub">Your Figma card — editable layers, PNG export.</p>
+  </div>
+  <div class="cBody">
+
+    <details class="grp" open>
+      <summary>Identity</summary>
+      <div class="gb">
+        <label class="f"><span>Player Name (forum name)</span><input type="text" data-text="Player Name"></label>
+        <label class="f"><span>Character Name (footballer)</span><input type="text" data-text="Character Name"></label>
+        <label class="f"><span>Character Role (position)</span><input type="text" data-text="Character Role"></label>
+        <label class="f"><span>Alignment</span>
+          <select data-text="Player Alignment">
+            <option>TOWN</option><option>MAFIA</option><option>THIRD PARTY</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Ability 1</summary>
+      <div class="gb">
+        <label class="f"><span>Title</span><input type="text" data-text="Ability Name - Night"></label>
+        <label class="f"><span>Description</span><textarea data-wrap="Ability Description"></textarea></label>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Ability 2</summary>
+      <div class="gb">
+        <label class="f"><span>Title</span><input type="text" data-text="Ability Name - Night_2"></label>
+        <label class="f"><span>Description</span><textarea data-wrap="Ability Description_2"></textarea></label>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Images</summary>
+      <div class="gb">
+        <label class="f"><span>Character photo</span><input type="file" accept="image/*" data-img="Character Image"></label>
+        <label class="f"><span>Flag</span><input type="file" accept="image/*" data-img="Flag Image"></label>
+        <p class="hint">Photos are cover-fitted into the original frame. Use a roughly portrait crop for the player.</p>
+      </div>
+    </details>
+
+  </div>
+  <div class="cFoot">
+    <button class="btn" id="download">Download PNG</button>
+  </div>
+</div>
+
+<div class="stageWrap">
+  <div id="stage"><!--SVG_HERE--></div>
+</div>
+
+<script>
+const svg = document.querySelector('#stage svg');
+const SVGNS = 'http://www.w3.org/2000/svg';
+const XLINK = 'http://www.w3.org/1999/xlink';
+const byId = id => svg.querySelector('[id="'+CSS.escape(id)+'"]');
+
+/* ---------- text: single-line layers ---------- */
+// fields that should stay centered in the white card and shrink to fit it
+const fitCfg = {};   // id -> {cx, maxw, base}
+function initFit(id, cx, maxw){
+  const t = byId(id); if(!t) return;
+  fitCfg[id] = {cx, maxw, base: parseFloat(t.getAttribute('font-size')||40)};
+  t.setAttribute('text-anchor','middle');
+  const ts = t.querySelector('tspan'); if(ts) ts.setAttribute('x', cx);
+}
+function setText(id, str){
+  const t = byId(id); if(!t) return;
+  const cfg = fitCfg[id];
+  const first = t.querySelector('tspan');
+  const y = first ? first.getAttribute('y') : (t.getAttribute('y') || 0);
+  const x = cfg ? cfg.cx : (first ? first.getAttribute('x') : 0);
+  while(t.firstChild) t.removeChild(t.firstChild);
+  const ts = document.createElementNS(SVGNS,'tspan');
+  ts.setAttribute('x', x); ts.setAttribute('y', y);
+  ts.textContent = str;
+  t.appendChild(ts);
+  if(cfg){                                   // shrink font so it fits the card
+    t.setAttribute('font-size', cfg.base);
+    const w = ts.getComputedTextLength();
+    if(w > cfg.maxw) t.setAttribute('font-size', Math.max(8, cfg.base * cfg.maxw / w));
+  }
+}
+
+/* ---------- text: wrapping layers (ability descriptions) ---------- */
+const wrapMeta = {};   // id -> {x, y0, lh, maxw}
+function initWrap(id){
+  const t = byId(id); if(!t) return;
+  const lines = [...t.querySelectorAll('tspan')];
+  const f = lines[0];
+  const x  = parseFloat(f.getAttribute('x'));
+  const y0 = parseFloat(f.getAttribute('y'));
+  const lh = lines[1] ? parseFloat(lines[1].getAttribute('y')) - y0
+                      : parseFloat(t.getAttribute('font-size')||20) * 1.55;
+  // widest existing line ≈ the design's text-box width
+  let maxw = 0;
+  for(const l of lines){ const w = l.getComputedTextLength(); if(w>maxw) maxw=w; }
+  wrapMeta[id] = {x, y0, lh, maxw: maxw*1.02};
+}
+function measure(t, str){
+  const ts = document.createElementNS(SVGNS,'tspan');
+  ts.textContent = str; t.appendChild(ts);
+  const w = ts.getComputedTextLength(); t.removeChild(ts);
+  return w;
+}
+function setWrapped(id, str){
+  const t = byId(id), m = wrapMeta[id]; if(!t||!m) return;
+  const words = str.replace(/\s+/g,' ').trim().split(' ');
+  const lines = []; let cur = '';
+  for(const w of words){
+    const test = cur ? cur+' '+w : w;
+    if(cur && measure(t, test) > m.maxw){ lines.push(cur); cur = w; }
+    else cur = test;
+  }
+  if(cur) lines.push(cur);
+  while(t.firstChild) t.removeChild(t.firstChild);
+  lines.forEach((ln,i)=>{
+    const ts = document.createElementNS(SVGNS,'tspan');
+    ts.setAttribute('x', m.x); ts.setAttribute('y', m.y0 + i*m.lh);
+    ts.textContent = ln;
+    t.appendChild(ts);
+  });
+}
+
+/* ---------- images: turn pattern-filled rects into plain cover-fit <image> ---------- */
+const imgSlots = {};  // layerId -> <image> element we control
+function initImageSlot(layerId){
+  const g = byId(layerId); if(!g) return;
+  // find the rect that paints a pattern, and the pattern's source <image>
+  const rect = g.querySelector('rect[fill^="url("]') || svg.querySelector('[id="'+CSS.escape(layerId)+'"] rect');
+  if(!rect) return;
+  const patId = (rect.getAttribute('fill').match(/url\(#([^)]+)\)/)||[])[1];
+  const pat = patId && svg.querySelector('[id="'+CSS.escape(patId)+'"]');
+  const use = pat && pat.querySelector('use');
+  const srcId = use && (use.getAttribute('href')||use.getAttributeNS(XLINK,'href')||'').replace('#','');
+  const srcImg = srcId && svg.querySelector('[id="'+CSS.escape(srcId)+'"]');
+  const href = srcImg ? (srcImg.getAttribute('href')||srcImg.getAttributeNS(XLINK,'href')) : '';
+  // geometry of the rect (it may carry a translate transform)
+  let x=parseFloat(rect.getAttribute('x')||0), y=parseFloat(rect.getAttribute('y')||0);
+  const w=parseFloat(rect.getAttribute('width')), h=parseFloat(rect.getAttribute('height'));
+  const tr=(rect.getAttribute('transform')||'').match(/translate\(([-\d.]+)[ ,]+([-\d.]+)\)/);
+  if(tr){ x+=parseFloat(tr[1]); y+=parseFloat(tr[2]); }
+  const img = document.createElementNS(SVGNS,'image');
+  img.setAttribute('x',x); img.setAttribute('y',y);
+  img.setAttribute('width',w); img.setAttribute('height',h);
+  img.setAttribute('preserveAspectRatio','xMidYMid slice'); // = object-fit: cover
+  img.setAttributeNS(XLINK,'href',href); img.setAttribute('href',href);
+  rect.replaceWith(img);
+  imgSlots[layerId] = img;
+}
+function setImage(layerId, dataUrl){
+  const img = imgSlots[layerId]; if(!img) return;
+  img.setAttributeNS(XLINK,'href',dataUrl); img.setAttribute('href',dataUrl);
+}
+
+/* ---------- fix Figma export z-order quirks ---------- */
+// "Player Name" (KARTHAIN) overflows the white player-card and a decorative shape
+// was exported on top of its tail; raise it so it always paints in full.
+(function(){ const pn = byId('Player Name'); if(pn) svg.appendChild(pn); })();
+
+/* ---------- wire controls ---------- */
+// centre + shrink-to-fit the three stacked fields in the white player card
+initFit('Character Name', 239, 388);
+initFit('Character Role', 239, 388);
+initFit('Player Alignment', 239, 388);
+['Ability Description','Ability Description_2'].forEach(initWrap);
+['Character Image','Flag Image'].forEach(initImageSlot);
+
+document.querySelectorAll('[data-text]').forEach(c=>{
+  c.addEventListener('input', ()=> setText(c.dataset.text, c.value));
+});
+document.querySelectorAll('[data-wrap]').forEach(c=>{
+  c.addEventListener('input', ()=> setWrapped(c.dataset.wrap, c.value));
+});
+document.querySelectorAll('[data-img]').forEach(c=>{
+  c.addEventListener('change', e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=> setImage(c.dataset.img, r.result);
+    r.readAsDataURL(f);
+  });
+});
+
+/* ---------- seed control values from the SVG's current text ---------- */
+function seed(){
+  document.querySelectorAll('[data-text]').forEach(c=>{
+    const t = byId(c.dataset.text);
+    if(t) c.value = t.textContent.trim();
+  });
+  document.querySelectorAll('[data-wrap]').forEach(c=>{
+    const t = byId(c.dataset.wrap);
+    if(t) c.value = [...t.querySelectorAll('tspan')].map(s=>s.textContent.trim()).join(' ');
+  });
+}
+seed();
+
+/* ---------- export PNG ---------- */
+async function exportPng(scale){
+  await (document.fonts ? document.fonts.ready : Promise.resolve());
+  const clone = svg.cloneNode(true);
+  if(!clone.getAttribute('width'))  clone.setAttribute('width', 1400);
+  if(!clone.getAttribute('height')) clone.setAttribute('height', 853);
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  try{
+    const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    const vb = (svg.getAttribute('viewBox')||'0 0 1400 853').split(/\s+/).map(Number);
+    const W = vb[2]||1400, H = vb[3]||853;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(W*scale); canvas.height = Math.round(H*scale);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+  } finally { URL.revokeObjectURL(url); }
+}
+document.getElementById('download').addEventListener('click', async ()=>{
+  const btn = document.getElementById('download'), old = btn.textContent;
+  btn.textContent = 'Rendering…';
+  try{
+    const data = await exportPng(2);
+    const name = (byId('Character Name')?.textContent.trim() || 'card').replace(/[^a-z0-9]+/gi,'_');
+    const a = document.createElement('a'); a.download = name+'.png'; a.href = data; a.click();
+  }catch(err){ alert('Render failed: '+err.message); }
+  btn.textContent = old;
+});
+</script>
+</body>
+</html>
