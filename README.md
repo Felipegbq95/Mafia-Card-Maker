@@ -45,11 +45,25 @@ python -m http.server 8753
 
 ## How the editing works
 Controls in `src/cardmaker.src.html` bind to the Figma layer ids in the SVG:
-`Player Name`, `Character Name`, `Character Role`, `Player Alignment`,
-`Ability Name - Night` (+`_2`), `Ability Description` (+`_2`), `Character Image`, `Flag Image`.
-Text layers become inputs; `Character Image` is an upload slot (cover-fitted); `Flag Image` is a
-48-country dropdown (the World Cup 2026 field, from `assets/players.json`) that fetches the flag
-PNG from flagcdn.com and embeds it as a data URL. Download = serialize the SVG → canvas → PNG (2×).
+`Player Name`, `Character Name`, `Character Role`, `Player Alignment`, `Character Image`,
+`Flag Image`. Text layers become inputs; `Character Image` is an upload slot (cover-fitted).
+Download = serialize the SVG → canvas → PNG (2×).
+
+**Country / Player autofill:** the Images panel has a Country dropdown (the 48 World Cup 2026
+teams, from `assets/players.json`, baked into `cardmaker.html` at build time) and a dependent
+Player dropdown listing that country's 26-player roster. Picking a country fetches its flag from
+flagcdn.com; picking a player fetches their photo from digitalhub.fifa.com and fills Character
+Name/Role. Both are just convenience autofills — every field stays editable after, and the
+Character photo / Flag photo upload inputs always override whatever was auto-filled. Pick
+"Other (custom)" as the country to leave the flag/photo alone and type your own name/role.
+
+**Actions:** a repeatable list of 1-5 (add/remove in the panel), driven by `abilities` in
+`src/cardmaker.src.html`. Each is a runtime clone of the single "Ability 1" template in
+`design/Card2.svg`, positioned by a wrapping `<g transform>` so no per-clone id rewriting is
+needed. The group centers itself within the card's header-to-footer band; at 4-5 actions it
+auto-scales down uniformly (not just squished) to keep everything on the card. Each action can
+also take a custom icon upload, rendered full-bleed on the left (rounded to match the box's own
+corner, square where it meets the text) in place of the default ball doodle.
 
 Selecting **Alignment** (Town/Mafia/Third Party) also recolors the Player Name/Character Name/
 Character Role/Player Alignment text and swaps the card's background image — see `ALIGN_CFG` in
@@ -57,9 +71,10 @@ Character Role/Player Alignment text and swaps the card's background image — s
 into `design/Card2.svg` as hidden/shown `<image>` layers (`BG (mafia)`, `BG (town)`, `BG (3p)`).
 
 ### Network dependency
-The flag dropdown is the one part of the app that isn't fully offline/self-contained — it fetches
-from `flagcdn.com` at runtime when you change the selection. Everything else (fonts, backgrounds,
-uploaded photos) is baked into the file with no network calls.
+The flag and player-photo fetches are the only parts of the app that aren't fully offline/
+self-contained — they hit flagcdn.com / digitalhub.fifa.com at runtime when you change those
+dropdowns. Everything else (fonts, backgrounds, the player roster data, uploaded photos) is baked
+into the file with no network calls.
 
 ### Font note (important)
 Figma collapsed two FWC2026 widths into one family + weight. In `build.ps1`, `FWC2026` **bold**
@@ -71,5 +86,7 @@ while normal weight = Normal Regular. Mapping bold to Normal Black makes those l
 effects, timing, rarity, aliases) — intended to power a future "pick a role → autofill" feature.
 
 ## Open items / next steps
-1. Long ability descriptions overflow the fixed-height ability card (shrink-to-fit vs. grow cards).
+1. A very long single action description can still overflow its own box's white background —
+   text wraps to fit the width, but there's no cap/shrink for the number of wrapped lines vs. box
+   height. (Having too many *actions* is handled — the group auto-scales down at 4-5.)
 2. Wire the role-library autofill from `mafia_universe_role_index.html`.

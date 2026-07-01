@@ -10,6 +10,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const src  = join(root, 'src/cardmaker.src.html');
 const svgF = join(root, 'design/Card2.svg');
 const fdir = join(root, 'design/fonts');
+const playersF = join(root, 'assets/players.json');
 
 const b64 = p => readFileSync(p).toString('base64');
 const face = (fam, wt, file) =>
@@ -38,6 +39,9 @@ svg = svg.replace(/(<svg\b[^>]*>)/, `$1\n<style>\n${faces}\n</style>`);
 
 let html = readFileSync(src, 'utf8');
 html = html.replace('<!--SVG_HERE-->', svg);
+// embed the World Cup 2026 country/player roster (name, position, photo URL) as base64
+// JSON, same pattern as the fonts above, so it's part of the self-contained file.
+html = html.replace('"/*PLAYERS_DATA_HERE*/"', JSON.stringify(b64(playersF)));
 
 const out = join(root, 'cardmaker.html');
 writeFileSync(out, html, 'utf8');

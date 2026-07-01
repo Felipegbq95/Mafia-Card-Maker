@@ -5,6 +5,7 @@ $root = $PSScriptRoot
 $src  = Join-Path $root 'src/cardmaker.src.html'
 $svgF = Join-Path $root 'design/Card2.svg'
 $fdir = Join-Path $root 'design/fonts'
+$playersF = Join-Path $root 'assets/players.json'
 
 function B64($p){ [Convert]::ToBase64String([IO.File]::ReadAllBytes($p)) }
 function Face($fam,$wt,$file){
@@ -35,6 +36,9 @@ $svg = [regex]::Replace($svg, '(<svg\b[^>]*>)', "`$1`n<style>`n$faces`n</style>"
 
 $html = [IO.File]::ReadAllText($src)
 $html = $html.Replace('<!--SVG_HERE-->', $svg)
+# embed the World Cup 2026 country/player roster (name, position, photo URL) as base64
+# JSON, same pattern as the fonts above, so it's part of the self-contained file.
+$html = $html.Replace('"/*PLAYERS_DATA_HERE*/"', "`"$(B64 $playersF)`"")
 
 $out = Join-Path $root 'cardmaker.html'
 [IO.File]::WriteAllText($out, $html, [Text.UTF8Encoding]::new($false))

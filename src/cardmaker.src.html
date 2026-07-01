@@ -87,60 +87,21 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
     <details class="grp" open>
       <summary>Images</summary>
       <div class="gb">
-        <label class="f"><span>Character photo</span><input type="file" accept="image/*" data-img="Character Image"></label>
-        <label class="f"><span>Flag</span>
-          <select id="flagSelect">
-            <option value="dz">Algeria</option>
-            <option value="ar" selected>Argentina</option>
-            <option value="au">Australia</option>
-            <option value="at">Austria</option>
-            <option value="be">Belgium</option>
-            <option value="ba">Bosnia &amp; Herzegovina</option>
-            <option value="br">Brazil</option>
-            <option value="cv">Cabo Verde</option>
-            <option value="ca">Canada</option>
-            <option value="co">Colombia</option>
-            <option value="ci">Cote d&#x27;Ivoire</option>
-            <option value="hr">Croatia</option>
-            <option value="cw">Curacao</option>
-            <option value="cz">Czechia</option>
-            <option value="cd">DR Congo</option>
-            <option value="ec">Ecuador</option>
-            <option value="eg">Egypt</option>
-            <option value="gb-eng">England</option>
-            <option value="fr">France</option>
-            <option value="de">Germany</option>
-            <option value="gh">Ghana</option>
-            <option value="ht">Haiti</option>
-            <option value="ir">Iran</option>
-            <option value="iq">Iraq</option>
-            <option value="jp">Japan</option>
-            <option value="jo">Jordan</option>
-            <option value="kr">Korea Republic</option>
-            <option value="mx">Mexico</option>
-            <option value="ma">Morocco</option>
-            <option value="nl">Netherlands</option>
-            <option value="nz">New Zealand</option>
-            <option value="no">Norway</option>
-            <option value="pa">Panama</option>
-            <option value="py">Paraguay</option>
-            <option value="pt">Portugal</option>
-            <option value="qa">Qatar</option>
-            <option value="sa">Saudi Arabia</option>
-            <option value="gb-sct">Scotland</option>
-            <option value="sn">Senegal</option>
-            <option value="za">South Africa</option>
-            <option value="es">Spain</option>
-            <option value="se">Sweden</option>
-            <option value="ch">Switzerland</option>
-            <option value="tn">Tunisia</option>
-            <option value="tr">Turkiye</option>
-            <option value="us">USA</option>
-            <option value="uy">Uruguay</option>
-            <option value="uz">Uzbekistan</option>
+        <label class="f"><span>Country</span>
+          <select id="countrySelect">
+            <option value="">Other (custom)</option>
           </select>
         </label>
-        <p class="hint">Photos are cover-fitted into the original frame. Use a roughly portrait crop for the player.</p>
+        <label class="f"><span>Player (optional autofill)</span>
+          <select id="playerSelect">
+            <option value="">— Custom / type your own —</option>
+          </select>
+        </label>
+        <label class="f"><span>Character photo</span><input type="file" accept="image/*" data-img="Character Image"></label>
+        <label class="f"><span>Flag photo</span><input type="file" accept="image/*" id="flagUpload"></label>
+        <p class="hint">Pick a country to set the flag, then optionally pick a player to auto-fill their name, role,
+          and photo — everything stays editable after, and uploading a photo always overrides the auto-filled one.
+          Pick "Other (custom)" to leave the flag/photo alone and just type your own name/role.</p>
       </div>
     </details>
 
@@ -155,6 +116,10 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
 </div>
 
 <script>
+// World Cup 2026 roster: slug -> {name, flag, players:[{n,p,img}]}. Baked in at build time
+// from assets/players.json (see build.mjs / build.ps1).
+const PLAYERS_DATA = JSON.parse(atob("/*PLAYERS_DATA_HERE*/"));
+
 const svg = document.querySelector('#stage svg');
 const SVGNS = 'http://www.w3.org/2000/svg';
 const XLINK = 'http://www.w3.org/1999/xlink';
@@ -226,9 +191,9 @@ function setWrappedEl(t, m, str){
     t.appendChild(ts);
   });
 }
-function setSingleLine(el, str){
+function setSingleLine(el, str, xOverride){
   const first = el.querySelector('tspan');
-  const x = first ? first.getAttribute('x') : 0;
+  const x = xOverride ?? (first ? first.getAttribute('x') : 0);
   const y = first ? first.getAttribute('y') : 0;
   while(el.firstChild) el.removeChild(el.firstChild);
   const ts = document.createElementNS(SVGNS,'tspan');
@@ -272,6 +237,12 @@ function setImage(layerId, dataUrl){
 // "Player Name" (KARTHAIN) overflows the white player-card and a decorative shape
 // was exported on top of its tail; raise it so it always paints in full.
 (function(){ const pn = byId('Player Name'); if(pn) svg.appendChild(pn); })();
+// "Flag Image" sits on top of "Character Image" at first paint (they're siblings and
+// Flag comes first in source order, so this shouldn't hold — but browsers stop
+// respecting that ordering the first time Character Image's href is reassigned via
+// setImage, e.g. on any photo upload or player autofill, silently burying the flag).
+// Re-appending Flag Image as the last sibling pins it on top for good, regardless.
+(function(){ const fl = byId('Flag Image'); if(fl) fl.parentElement.appendChild(fl); })();
 
 /* ---------- alignment: recolor player/character text + swap card background ---------- */
 const ALIGN_CFG = {
@@ -297,7 +268,21 @@ abilityTemplate.remove();
 const ABILITY_X = 495.275, ABILITY_W = 876, ABILITY_CX = ABILITY_X + ABILITY_W/2;
 const ABILITY_TEMPLATE_Y = 228.5, ABILITY_H = 154, ABILITY_GAP = 15;
 const ABILITY_SECTION_TOP = 84, ABILITY_SECTION_BOTTOM = 733; // header/footer separators are at y=62.5 / y=754
-const ABILITY_ICON = { x: 524.275, y: 265.5, w: 80, h: 80 };  // default doodle's bounding box, padded
+const ABILITY_RADIUS = 18; // matches the box's own rx, so a custom icon's rounded edge blends into its corner
+// custom-icon photo slot: full box height, flush left, rounded to match the box's own
+// left corners, square where it meets the text (like a card thumbnail)
+const ABILITY_ICON = { x: ABILITY_X, y: ABILITY_TEMPLATE_Y, w: ABILITY_H, h: ABILITY_H, r: ABILITY_RADIUS };
+const ABILITY_TEXT_X = ABILITY_ICON.x + ABILITY_ICON.w + 24;
+const ABILITY_TEXT_RIGHT_PAD = 30;
+const ABILITY_TEXT_MAXW = (ABILITY_X + ABILITY_W) - ABILITY_TEXT_X - ABILITY_TEXT_RIGHT_PAD;
+
+// path for a rect rounded only on its left side (top-right/bottom-right stay square) —
+// used to clip a full-bleed icon photo so it blends into the box's own rounded corner
+// on the left while cutting off flat where it meets the text on the right.
+function roundedLeftRectPath(x, y, w, h, r){
+  return `M${x+r},${y} H${x+w} V${y+h} H${x+r} A${r},${r} 0 0 1 ${x},${y+h-r} `
+       + `V${y+r} A${r},${r} 0 0 1 ${x+r},${y} Z`;
+}
 
 // At full size (154px + 15px gap), only 3 actions fit the available band; 4-5 need to
 // shrink. Scale uniformly (not just height) so text and the icon don't distort.
@@ -335,16 +320,29 @@ function renderAbilityBoxes(){
     const iconDoodle = clone.querySelector('[id="proicons:soccer"]');
     const iconGroup  = clone.querySelector('[id="Ability Image"]');
 
+    // the sample text's own rendered width no longer reflects the real text-box width
+    // now that the icon photo slot is wider, so override x/maxw with real geometry
     const wrapMeta = computeWrapMeta(descEl);
-    setSingleLine(titleEl, a.title);
+    wrapMeta.x = ABILITY_TEXT_X;
+    wrapMeta.maxw = ABILITY_TEXT_MAXW;
+    setSingleLine(titleEl, a.title, ABILITY_TEXT_X);
     setWrappedEl(descEl, wrapMeta, a.desc);
 
     if(a.icon){
       iconDoodle.style.display = 'none';
+      const clipId = `ability-icon-clip-${i}`;
+      const clip = document.createElementNS(SVGNS,'clipPath');
+      clip.setAttribute('id', clipId);
+      const clipPath = document.createElementNS(SVGNS,'path');
+      clipPath.setAttribute('d', roundedLeftRectPath(ABILITY_ICON.x, ABILITY_ICON.y, ABILITY_ICON.w, ABILITY_ICON.h, ABILITY_ICON.r));
+      clip.appendChild(clipPath);
+      iconGroup.appendChild(clip);
+
       const img = document.createElementNS(SVGNS,'image');
       img.setAttribute('x', ABILITY_ICON.x); img.setAttribute('y', ABILITY_ICON.y);
       img.setAttribute('width', ABILITY_ICON.w); img.setAttribute('height', ABILITY_ICON.h);
       img.setAttribute('preserveAspectRatio','xMidYMid slice');
+      img.setAttribute('clip-path', `url(#${clipId})`);
       img.setAttributeNS(XLINK,'href', a.icon); img.setAttribute('href', a.icon);
       iconGroup.appendChild(img);
     }
@@ -355,7 +353,7 @@ function renderAbilityBoxes(){
 }
 function updateAbilityText(i){
   const ref = abilityRefs[i]; if(!ref) return;
-  setSingleLine(ref.titleEl, abilities[i].title);
+  setSingleLine(ref.titleEl, abilities[i].title, ABILITY_TEXT_X);
   setWrappedEl(ref.descEl, ref.wrapMeta, abilities[i].desc);
 }
 
@@ -436,21 +434,82 @@ document.querySelectorAll('[data-img]').forEach(c=>{
   });
 });
 
-/* ---------- flag: pick a country, fetch its flag, embed as a data URL ---------- */
-// flagcdn.com serves CORS-enabled PNGs, so the fetched blob can be canvas-exported
-// safely once turned into a data: URL (same path as the uploaded-photo flow above).
-const flagSelect = document.getElementById('flagSelect');
-async function applyFlag(code){
-  if(!code) return;
-  try{
-    const res = await fetch(`https://flagcdn.com/w320/${code}.png`);
-    const blob = await res.blob();
+/* ---------- shared: fetch an image URL and turn it into a data: URL ---------- */
+// flagcdn.com and digitalhub.fifa.com both serve CORS-enabled images, so the fetched
+// blob can be canvas-exported safely once turned into a data: URL (same path as the
+// uploaded-photo flow above).
+function fetchAsDataUrl(url){
+  return fetch(url).then(res => res.blob()).then(blob => new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => setImage('Flag Image', r.result);
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
     r.readAsDataURL(blob);
-  }catch(err){ console.error('flag fetch failed', err); }
+  }));
 }
-flagSelect.addEventListener('change', ()=> applyFlag(flagSelect.value));
+
+/* ---------- country: sets the flag, and offers that country's players to autofill ---------- */
+function applyFlag(code){
+  if(!code) return Promise.resolve();
+  return fetchAsDataUrl(`https://flagcdn.com/w320/${code}.png`)
+    .then(dataUrl => setImage('Flag Image', dataUrl))
+    .catch(err => console.error('flag fetch failed', err));
+}
+
+const countrySelect = document.getElementById('countrySelect');
+const playerSelect = document.getElementById('playerSelect');
+Object.keys(PLAYERS_DATA)
+  .sort((a,b) => PLAYERS_DATA[a].name.localeCompare(PLAYERS_DATA[b].name))
+  .forEach(slug=>{
+    const opt = document.createElement('option');
+    opt.value = slug; opt.textContent = PLAYERS_DATA[slug].name;
+    countrySelect.appendChild(opt);
+  });
+
+function populatePlayers(slug){
+  playerSelect.innerHTML = '<option value="">— Custom / type your own —</option>';
+  const country = PLAYERS_DATA[slug];
+  playerSelect.disabled = !country;
+  if(!country) return;
+  country.players.forEach((p,i)=>{
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = `${p.n} (${p.p})`;
+    playerSelect.appendChild(opt);
+  });
+}
+
+countrySelect.addEventListener('change', ()=>{
+  const slug = countrySelect.value;
+  populatePlayers(slug);
+  if(slug) applyFlag(PLAYERS_DATA[slug].flag);
+});
+
+const characterNameInput = document.querySelector('[data-text="Character Name"]');
+const characterRoleInput = document.querySelector('[data-text="Character Role"]');
+const PLAYER_IMG_PARAMS = '?io=transform:fill,width:520,gravity:top&quality=90';
+playerSelect.addEventListener('change', ()=>{
+  const country = PLAYERS_DATA[countrySelect.value];
+  const p = country && country.players[+playerSelect.value];
+  if(!p) return; // "Custom" selected, or no country: leave fields as they are
+  characterNameInput.value = p.n; setText('Character Name', p.n);
+  const role = p.p.toUpperCase();
+  characterRoleInput.value = role; setText('Character Role', role);
+  fetchAsDataUrl(p.img + PLAYER_IMG_PARAMS)
+    .then(dataUrl => setImage('Character Image', dataUrl))
+    .catch(err => console.error('player photo fetch failed', err));
+});
+
+document.getElementById('flagUpload').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> setImage('Flag Image', r.result);
+  r.readAsDataURL(f);
+});
+
+// default to Argentina / Juan Musso, matching what's already baked into the SVG sample —
+// no fetch needed on load, same reasoning as the alignment/seed defaults below.
+countrySelect.value = 'argentina';
+populatePlayers('argentina');
+playerSelect.value = '0';
 
 /* ---------- seed control values from the SVG's current text ---------- */
 function seed(){
@@ -463,6 +522,10 @@ seed();
 applyAlignment(alignmentSelect.value);
 renderAbilityBoxes();
 renderAbilityControls();
+// the custom FWC2026 font may still be parsing when the line above first runs, so its
+// line-wrap measurements can use fallback-font metrics and wrap too much text onto a
+// line; redo it once the real font is ready so text doesn't overflow the box.
+if(document.fonts) document.fonts.ready.then(renderAbilityBoxes);
 
 /* ---------- export PNG ---------- */
 async function exportPng(scale){
