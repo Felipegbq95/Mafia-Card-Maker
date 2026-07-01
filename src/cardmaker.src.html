@@ -37,10 +37,14 @@ input[type=file]{font-size:11px;color:var(--mut);width:100%}
 input[type=file]::file-selector-button{background:var(--panel);border:1px solid var(--line);color:var(--ink);
   border-radius:7px;padding:5px 9px;margin-right:8px;cursor:pointer;font-size:11px}
 .mini{font-size:11px;color:var(--mut);background:none;border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer}
+.mini[disabled]{opacity:.45;cursor:default}
+.mini.danger{color:#ff8a8a;border-color:#4a2a2a}
 .btn{display:block;width:100%;border:0;border-radius:10px;padding:12px;font-weight:800;
   font-size:13px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--lime);color:#0b1200}
 .btn:active{transform:translateY(1px)}
 .hint{font-size:11px;color:var(--mut);margin:8px 2px 0;line-height:1.4}
+.secHead{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 8px;
+  font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c2cad6}
 .abcard{border:1px solid var(--line);border-radius:10px;padding:11px;margin:0 0 10px;background:#1a202b}
 .abcard b{display:block;font-size:12px;color:#c9d2e0;margin:0 0 8px}
 
@@ -74,21 +78,11 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
       </div>
     </details>
 
-    <details class="grp" open>
-      <summary>Ability 1</summary>
-      <div class="gb">
-        <label class="f"><span>Title</span><input type="text" data-text="Ability Name - Night"></label>
-        <label class="f"><span>Description</span><textarea data-wrap="Ability Description"></textarea></label>
-      </div>
-    </details>
-
-    <details class="grp" open>
-      <summary>Ability 2</summary>
-      <div class="gb">
-        <label class="f"><span>Title</span><input type="text" data-text="Ability Name - Night_2"></label>
-        <label class="f"><span>Description</span><textarea data-wrap="Ability Description_2"></textarea></label>
-      </div>
-    </details>
+    <div class="secHead">
+      <span>Actions</span>
+      <button type="button" class="mini" id="addAbilityBtn">+ Add action</button>
+    </div>
+    <div id="abilitiesControls"></div>
 
     <details class="grp" open>
       <summary>Images</summary>
@@ -193,10 +187,10 @@ function setText(id, str){
   }
 }
 
-/* ---------- text: wrapping layers (ability descriptions) ---------- */
-const wrapMeta = {};   // id -> {x, y0, lh, maxw}
-function initWrap(id){
-  const t = byId(id); if(!t) return;
+/* ---------- text: wrapping layers (used by the actions below) ---------- */
+// generalized to work on any text element directly, since actions are cloned at runtime
+// rather than looked up by a fixed id.
+function computeWrapMeta(t){
   const lines = [...t.querySelectorAll('tspan')];
   const f = lines[0];
   const x  = parseFloat(f.getAttribute('x'));
@@ -206,7 +200,7 @@ function initWrap(id){
   // widest existing line ≈ the design's text-box width
   let maxw = 0;
   for(const l of lines){ const w = l.getComputedTextLength(); if(w>maxw) maxw=w; }
-  wrapMeta[id] = {x, y0, lh, maxw: maxw*1.02};
+  return {x, y0, lh, maxw: maxw*1.02};
 }
 function measure(t, str){
   const ts = document.createElementNS(SVGNS,'tspan');
@@ -214,8 +208,8 @@ function measure(t, str){
   const w = ts.getComputedTextLength(); t.removeChild(ts);
   return w;
 }
-function setWrapped(id, str){
-  const t = byId(id), m = wrapMeta[id]; if(!t||!m) return;
+function setWrappedEl(t, m, str){
+  if(!t || !m) return;
   const words = str.replace(/\s+/g,' ').trim().split(' ');
   const lines = []; let cur = '';
   for(const w of words){
@@ -231,6 +225,16 @@ function setWrapped(id, str){
     ts.textContent = ln;
     t.appendChild(ts);
   });
+}
+function setSingleLine(el, str){
+  const first = el.querySelector('tspan');
+  const x = first ? first.getAttribute('x') : 0;
+  const y = first ? first.getAttribute('y') : 0;
+  while(el.firstChild) el.removeChild(el.firstChild);
+  const ts = document.createElementNS(SVGNS,'tspan');
+  ts.setAttribute('x', x); ts.setAttribute('y', y);
+  ts.textContent = str;
+  el.appendChild(ts);
 }
 
 /* ---------- images: turn pattern-filled rects into plain cover-fit <image> ---------- */
@@ -283,12 +287,139 @@ function applyAlignment(value){
   ALIGN_BG_IDS.forEach(id => { const el = byId(id); if(el) el.style.display = (id === cfg.bg) ? '' : 'none'; });
 }
 
+/* ---------- actions: 1-5 repeatable cards, centered as a group ---------- */
+// "Ability 1" from the Figma export becomes an in-memory template; every rendered
+// action (including the first) is a fresh clone of it, positioned by a wrapping
+// <g transform="translate(0,dy)"> so we never have to rewrite its internal path data.
+const abilitiesGroup = byId('Abilities');
+const abilityTemplate = byId('Ability 1');
+abilityTemplate.remove();
+const ABILITY_X = 495.275, ABILITY_W = 876, ABILITY_CX = ABILITY_X + ABILITY_W/2;
+const ABILITY_TEMPLATE_Y = 228.5, ABILITY_H = 154, ABILITY_GAP = 15;
+const ABILITY_SECTION_TOP = 84, ABILITY_SECTION_BOTTOM = 733; // header/footer separators are at y=62.5 / y=754
+const ABILITY_ICON = { x: 524.275, y: 265.5, w: 80, h: 80 };  // default doodle's bounding box, padded
+
+// At full size (154px + 15px gap), only 3 actions fit the available band; 4-5 need to
+// shrink. Scale uniformly (not just height) so text and the icon don't distort.
+function abilityLayout(n){
+  const avail = ABILITY_SECTION_BOTTOM - ABILITY_SECTION_TOP;
+  const naturalTotal = n*ABILITY_H + (n-1)*ABILITY_GAP;
+  const s = naturalTotal > avail ? avail/naturalTotal : 1;
+  const boxH = ABILITY_H*s, gap = ABILITY_GAP*s;
+  const totalH = n*boxH + (n-1)*gap;
+  const start = ABILITY_SECTION_TOP + Math.max(0, (avail-totalH)/2);
+  const ys = Array.from({length:n}, (_,i)=> start + i*(boxH+gap));
+  return { ys, s };
+}
+
+let abilities = [
+  { title: 'Ability Name - Night', desc: 'Each night, choose a player to do a thing and that player will become dusted. Each time we do a dusted we explode the ball.', icon: null },
+  { title: 'Ability Name - Night', desc: 'Each night, choose a player to do a thing and that player will become dusted. Each time we do a dusted we explode the ball.', icon: null },
+];
+let abilityRefs = []; // per-index {titleEl, descEl, wrapMeta}, refreshed on every structural render
+
+function renderAbilityBoxes(){
+  while(abilitiesGroup.firstChild) abilitiesGroup.removeChild(abilitiesGroup.firstChild);
+  const { ys, s } = abilityLayout(abilities.length);
+  abilityRefs = abilities.map((a,i)=>{
+    const clone = abilityTemplate.cloneNode(true);
+    const wrapper = document.createElementNS(SVGNS,'g');
+    // scale (uniformly) around the box's own top-center, then move that anchor to ys[i]
+    wrapper.setAttribute('transform',
+      `translate(${ABILITY_CX},${ys[i]}) scale(${s}) translate(${-ABILITY_CX},${-ABILITY_TEMPLATE_Y})`);
+    wrapper.appendChild(clone);
+    abilitiesGroup.appendChild(wrapper); // attach before measuring text, getComputedTextLength needs a rendered element
+
+    const titleEl = clone.querySelector('[id="Ability Name - Night"]');
+    const descEl  = clone.querySelector('[id="Ability Description"]');
+    const iconDoodle = clone.querySelector('[id="proicons:soccer"]');
+    const iconGroup  = clone.querySelector('[id="Ability Image"]');
+
+    const wrapMeta = computeWrapMeta(descEl);
+    setSingleLine(titleEl, a.title);
+    setWrappedEl(descEl, wrapMeta, a.desc);
+
+    if(a.icon){
+      iconDoodle.style.display = 'none';
+      const img = document.createElementNS(SVGNS,'image');
+      img.setAttribute('x', ABILITY_ICON.x); img.setAttribute('y', ABILITY_ICON.y);
+      img.setAttribute('width', ABILITY_ICON.w); img.setAttribute('height', ABILITY_ICON.h);
+      img.setAttribute('preserveAspectRatio','xMidYMid slice');
+      img.setAttributeNS(XLINK,'href', a.icon); img.setAttribute('href', a.icon);
+      iconGroup.appendChild(img);
+    }
+
+    clone.querySelectorAll('[id]').forEach(el => el.id = el.id + '-' + i); // avoid duplicate ids across clones
+    return { titleEl, descEl, wrapMeta };
+  });
+}
+function updateAbilityText(i){
+  const ref = abilityRefs[i]; if(!ref) return;
+  setSingleLine(ref.titleEl, abilities[i].title);
+  setWrappedEl(ref.descEl, ref.wrapMeta, abilities[i].desc);
+}
+
+function renderAbilityControls(){
+  const wrap = document.getElementById('abilitiesControls');
+  wrap.innerHTML = '';
+  abilities.forEach((a,i)=>{
+    const details = document.createElement('details');
+    details.className = 'grp'; details.open = true;
+    details.innerHTML = `
+      <summary>Action ${i+1}${abilities.length>1 ? ` <button type="button" class="mini danger ability-remove" data-i="${i}">Remove</button>` : ''}</summary>
+      <div class="gb">
+        <label class="f"><span>Title</span><input type="text" class="ability-title" data-i="${i}"></label>
+        <label class="f"><span>Description</span><textarea class="ability-desc" data-i="${i}"></textarea></label>
+        <label class="f"><span>Icon (optional, replaces the ball doodle)</span><input type="file" accept="image/*" class="ability-icon" data-i="${i}"></label>
+        ${a.icon ? `<button type="button" class="mini ability-icon-reset" data-i="${i}">Use default icon</button>` : ''}
+      </div>`;
+    wrap.appendChild(details);
+  });
+
+  wrap.querySelectorAll('.ability-title').forEach(inp=>{
+    const i = +inp.dataset.i; inp.value = abilities[i].title;
+    inp.addEventListener('input', ()=>{ abilities[i].title = inp.value; updateAbilityText(i); });
+  });
+  wrap.querySelectorAll('.ability-desc').forEach(ta=>{
+    const i = +ta.dataset.i; ta.value = abilities[i].desc;
+    ta.addEventListener('input', ()=>{ abilities[i].desc = ta.value; updateAbilityText(i); });
+  });
+  wrap.querySelectorAll('.ability-icon').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const i = +inp.dataset.i; const f = e.target.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = ()=>{ abilities[i].icon = r.result; renderAbilityBoxes(); renderAbilityControls(); };
+      r.readAsDataURL(f);
+    });
+  });
+  wrap.querySelectorAll('.ability-icon-reset').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.preventDefault();
+      const i = +btn.dataset.i; abilities[i].icon = null; renderAbilityBoxes(); renderAbilityControls();
+    });
+  });
+  wrap.querySelectorAll('.ability-remove').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.preventDefault(); e.stopPropagation(); // don't let the click also toggle the <details>
+      const i = +btn.dataset.i; abilities.splice(i,1); renderAbilityBoxes(); renderAbilityControls();
+    });
+  });
+
+  const addBtn = document.getElementById('addAbilityBtn');
+  addBtn.disabled = abilities.length >= 5;
+  addBtn.textContent = abilities.length >= 5 ? 'Max 5 actions' : '+ Add action';
+}
+document.getElementById('addAbilityBtn').addEventListener('click', ()=>{
+  if(abilities.length >= 5) return;
+  abilities.push({ title:'', desc:'', icon:null });
+  renderAbilityBoxes(); renderAbilityControls();
+});
+
 /* ---------- wire controls ---------- */
 // centre + shrink-to-fit the three stacked fields in the white player card
 initFit('Character Name', 239, 388);
 initFit('Character Role', 239, 388);
 initFit('Player Alignment', 239, 388);
-['Ability Description','Ability Description_2'].forEach(initWrap);
 ['Character Image','Flag Image'].forEach(initImageSlot);
 
 document.querySelectorAll('[data-text]').forEach(c=>{
@@ -296,9 +427,6 @@ document.querySelectorAll('[data-text]').forEach(c=>{
 });
 const alignmentSelect = document.getElementById('alignmentSelect');
 alignmentSelect.addEventListener('input', ()=> applyAlignment(alignmentSelect.value));
-document.querySelectorAll('[data-wrap]').forEach(c=>{
-  c.addEventListener('input', ()=> setWrapped(c.dataset.wrap, c.value));
-});
 document.querySelectorAll('[data-img]').forEach(c=>{
   c.addEventListener('change', e=>{
     const f = e.target.files[0]; if(!f) return;
@@ -330,13 +458,11 @@ function seed(){
     const t = byId(c.dataset.text);
     if(t) c.value = t.textContent.trim();
   });
-  document.querySelectorAll('[data-wrap]').forEach(c=>{
-    const t = byId(c.dataset.wrap);
-    if(t) c.value = [...t.querySelectorAll('tspan')].map(s=>s.textContent.trim()).join(' ');
-  });
 }
 seed();
 applyAlignment(alignmentSelect.value);
+renderAbilityBoxes();
+renderAbilityControls();
 
 /* ---------- export PNG ---------- */
 async function exportPng(scale){
