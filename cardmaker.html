@@ -274,8 +274,8 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
 </g>
 </g>
 <g id="Ability Info">
-<text id="Ability Name - Night" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="32" letter-spacing="0em"><tspan x="641.275" y="277.38">Ability Name - Night</tspan></text>
-<text id="Ability Description" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="19.8" letter-spacing="0em"><tspan x="641.275" y="312.732">Each night, choose a player to do a thing and that player will </tspan><tspan x="641.275" y="347.732">become dusted. Each time we do a dusted we explode the ball. </tspan></text>
+<text id="Ability Name - Night" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="32" letter-spacing="0em"><tspan x="673.275" y="277.38">Ability Name - Night</tspan></text>
+<text id="Ability Description" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="19.8" letter-spacing="0em"><tspan x="673.275" y="312.732">Each night, choose a player to do a thing and that player will </tspan><tspan x="673.275" y="347.732">become dusted. Each time we do a dusted we explode the ball. </tspan></text>
 </g>
 </g>
 <rect x="495.775" y="229" width="875" height="153" rx="17.5" stroke="#D9D9D9"/>
@@ -440,9 +440,9 @@ function setWrappedEl(t, m, str){
     t.appendChild(ts);
   });
 }
-function setSingleLine(el, str){
+function setSingleLine(el, str, xOverride){
   const first = el.querySelector('tspan');
-  const x = first ? first.getAttribute('x') : 0;
+  const x = xOverride ?? (first ? first.getAttribute('x') : 0);
   const y = first ? first.getAttribute('y') : 0;
   while(el.firstChild) el.removeChild(el.firstChild);
   const ts = document.createElementNS(SVGNS,'tspan');
@@ -511,7 +511,21 @@ abilityTemplate.remove();
 const ABILITY_X = 495.275, ABILITY_W = 876, ABILITY_CX = ABILITY_X + ABILITY_W/2;
 const ABILITY_TEMPLATE_Y = 228.5, ABILITY_H = 154, ABILITY_GAP = 15;
 const ABILITY_SECTION_TOP = 84, ABILITY_SECTION_BOTTOM = 733; // header/footer separators are at y=62.5 / y=754
-const ABILITY_ICON = { x: 524.275, y: 265.5, w: 80, h: 80 };  // default doodle's bounding box, padded
+const ABILITY_RADIUS = 18; // matches the box's own rx, so a custom icon's rounded edge blends into its corner
+// custom-icon photo slot: full box height, flush left, rounded to match the box's own
+// left corners, square where it meets the text (like a card thumbnail)
+const ABILITY_ICON = { x: ABILITY_X, y: ABILITY_TEMPLATE_Y, w: ABILITY_H, h: ABILITY_H, r: ABILITY_RADIUS };
+const ABILITY_TEXT_X = ABILITY_ICON.x + ABILITY_ICON.w + 24;
+const ABILITY_TEXT_RIGHT_PAD = 30;
+const ABILITY_TEXT_MAXW = (ABILITY_X + ABILITY_W) - ABILITY_TEXT_X - ABILITY_TEXT_RIGHT_PAD;
+
+// path for a rect rounded only on its left side (top-right/bottom-right stay square) —
+// used to clip a full-bleed icon photo so it blends into the box's own rounded corner
+// on the left while cutting off flat where it meets the text on the right.
+function roundedLeftRectPath(x, y, w, h, r){
+  return `M${x+r},${y} H${x+w} V${y+h} H${x+r} A${r},${r} 0 0 1 ${x},${y+h-r} `
+       + `V${y+r} A${r},${r} 0 0 1 ${x+r},${y} Z`;
+}
 
 // At full size (154px + 15px gap), only 3 actions fit the available band; 4-5 need to
 // shrink. Scale uniformly (not just height) so text and the icon don't distort.
@@ -549,16 +563,29 @@ function renderAbilityBoxes(){
     const iconDoodle = clone.querySelector('[id="proicons:soccer"]');
     const iconGroup  = clone.querySelector('[id="Ability Image"]');
 
+    // the sample text's own rendered width no longer reflects the real text-box width
+    // now that the icon photo slot is wider, so override x/maxw with real geometry
     const wrapMeta = computeWrapMeta(descEl);
-    setSingleLine(titleEl, a.title);
+    wrapMeta.x = ABILITY_TEXT_X;
+    wrapMeta.maxw = ABILITY_TEXT_MAXW;
+    setSingleLine(titleEl, a.title, ABILITY_TEXT_X);
     setWrappedEl(descEl, wrapMeta, a.desc);
 
     if(a.icon){
       iconDoodle.style.display = 'none';
+      const clipId = `ability-icon-clip-${i}`;
+      const clip = document.createElementNS(SVGNS,'clipPath');
+      clip.setAttribute('id', clipId);
+      const clipPath = document.createElementNS(SVGNS,'path');
+      clipPath.setAttribute('d', roundedLeftRectPath(ABILITY_ICON.x, ABILITY_ICON.y, ABILITY_ICON.w, ABILITY_ICON.h, ABILITY_ICON.r));
+      clip.appendChild(clipPath);
+      iconGroup.appendChild(clip);
+
       const img = document.createElementNS(SVGNS,'image');
       img.setAttribute('x', ABILITY_ICON.x); img.setAttribute('y', ABILITY_ICON.y);
       img.setAttribute('width', ABILITY_ICON.w); img.setAttribute('height', ABILITY_ICON.h);
       img.setAttribute('preserveAspectRatio','xMidYMid slice');
+      img.setAttribute('clip-path', `url(#${clipId})`);
       img.setAttributeNS(XLINK,'href', a.icon); img.setAttribute('href', a.icon);
       iconGroup.appendChild(img);
     }
@@ -569,7 +596,7 @@ function renderAbilityBoxes(){
 }
 function updateAbilityText(i){
   const ref = abilityRefs[i]; if(!ref) return;
-  setSingleLine(ref.titleEl, abilities[i].title);
+  setSingleLine(ref.titleEl, abilities[i].title, ABILITY_TEXT_X);
   setWrappedEl(ref.descEl, ref.wrapMeta, abilities[i].desc);
 }
 
@@ -677,6 +704,10 @@ seed();
 applyAlignment(alignmentSelect.value);
 renderAbilityBoxes();
 renderAbilityControls();
+// the custom FWC2026 font may still be parsing when the line above first runs, so its
+// line-wrap measurements can use fallback-font metrics and wrap too much text onto a
+// line; redo it once the real font is ready so text doesn't overflow the box.
+if(document.fonts) document.fonts.ready.then(renderAbilityBoxes);
 
 /* ---------- export PNG ---------- */
 async function exportPng(scale){
