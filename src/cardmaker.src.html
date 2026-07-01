@@ -67,7 +67,7 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
         <label class="f"><span>Character Name (footballer)</span><input type="text" data-text="Character Name"></label>
         <label class="f"><span>Character Role (position)</span><input type="text" data-text="Character Role"></label>
         <label class="f"><span>Alignment</span>
-          <select data-text="Player Alignment">
+          <select id="alignmentSelect" data-text="Player Alignment">
             <option>TOWN</option><option>MAFIA</option><option>THIRD PARTY</option>
           </select>
         </label>
@@ -218,6 +218,20 @@ function setImage(layerId, dataUrl){
 // was exported on top of its tail; raise it so it always paints in full.
 (function(){ const pn = byId('Player Name'); if(pn) svg.appendChild(pn); })();
 
+/* ---------- alignment: recolor player/character text + swap card background ---------- */
+const ALIGN_CFG = {
+  'TOWN':         { color: '#146C2E', bg: 'BG (town)' },
+  'MAFIA':        { color: '#BC0000', bg: 'BG (mafia)' },
+  'THIRD PARTY':  { color: '#C79A00', bg: 'BG (3p)' },
+};
+const ALIGN_TEXT_IDS = ['Player Name', 'Character Name', 'Character Role', 'Player Alignment'];
+const ALIGN_BG_IDS = Object.values(ALIGN_CFG).map(c => c.bg);
+function applyAlignment(value){
+  const cfg = ALIGN_CFG[value]; if(!cfg) return;
+  ALIGN_TEXT_IDS.forEach(id => { const el = byId(id); if(el) el.setAttribute('fill', cfg.color); });
+  ALIGN_BG_IDS.forEach(id => { const el = byId(id); if(el) el.style.display = (id === cfg.bg) ? '' : 'none'; });
+}
+
 /* ---------- wire controls ---------- */
 // centre + shrink-to-fit the three stacked fields in the white player card
 initFit('Character Name', 239, 388);
@@ -229,6 +243,8 @@ initFit('Player Alignment', 239, 388);
 document.querySelectorAll('[data-text]').forEach(c=>{
   c.addEventListener('input', ()=> setText(c.dataset.text, c.value));
 });
+const alignmentSelect = document.getElementById('alignmentSelect');
+alignmentSelect.addEventListener('input', ()=> applyAlignment(alignmentSelect.value));
 document.querySelectorAll('[data-wrap]').forEach(c=>{
   c.addEventListener('input', ()=> setWrapped(c.dataset.wrap, c.value));
 });
@@ -253,6 +269,7 @@ function seed(){
   });
 }
 seed();
+applyAlignment(alignmentSelect.value);
 
 /* ---------- export PNG ---------- */
 async function exportPng(scale){
