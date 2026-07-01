@@ -94,7 +94,58 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
       <summary>Images</summary>
       <div class="gb">
         <label class="f"><span>Character photo</span><input type="file" accept="image/*" data-img="Character Image"></label>
-        <label class="f"><span>Flag</span><input type="file" accept="image/*" data-img="Flag Image"></label>
+        <label class="f"><span>Flag</span>
+          <select id="flagSelect">
+            <option value="dz">Algeria</option>
+            <option value="ar" selected>Argentina</option>
+            <option value="au">Australia</option>
+            <option value="at">Austria</option>
+            <option value="be">Belgium</option>
+            <option value="ba">Bosnia &amp; Herzegovina</option>
+            <option value="br">Brazil</option>
+            <option value="cv">Cabo Verde</option>
+            <option value="ca">Canada</option>
+            <option value="co">Colombia</option>
+            <option value="ci">Cote d&#x27;Ivoire</option>
+            <option value="hr">Croatia</option>
+            <option value="cw">Curacao</option>
+            <option value="cz">Czechia</option>
+            <option value="cd">DR Congo</option>
+            <option value="ec">Ecuador</option>
+            <option value="eg">Egypt</option>
+            <option value="gb-eng">England</option>
+            <option value="fr">France</option>
+            <option value="de">Germany</option>
+            <option value="gh">Ghana</option>
+            <option value="ht">Haiti</option>
+            <option value="ir">Iran</option>
+            <option value="iq">Iraq</option>
+            <option value="jp">Japan</option>
+            <option value="jo">Jordan</option>
+            <option value="kr">Korea Republic</option>
+            <option value="mx">Mexico</option>
+            <option value="ma">Morocco</option>
+            <option value="nl">Netherlands</option>
+            <option value="nz">New Zealand</option>
+            <option value="no">Norway</option>
+            <option value="pa">Panama</option>
+            <option value="py">Paraguay</option>
+            <option value="pt">Portugal</option>
+            <option value="qa">Qatar</option>
+            <option value="sa">Saudi Arabia</option>
+            <option value="gb-sct">Scotland</option>
+            <option value="sn">Senegal</option>
+            <option value="za">South Africa</option>
+            <option value="es">Spain</option>
+            <option value="se">Sweden</option>
+            <option value="ch">Switzerland</option>
+            <option value="tn">Tunisia</option>
+            <option value="tr">Turkiye</option>
+            <option value="us">USA</option>
+            <option value="uy">Uruguay</option>
+            <option value="uz">Uzbekistan</option>
+          </select>
+        </label>
         <p class="hint">Photos are cover-fitted into the original frame. Use a roughly portrait crop for the player.</p>
       </div>
     </details>
@@ -256,6 +307,22 @@ document.querySelectorAll('[data-img]').forEach(c=>{
     r.readAsDataURL(f);
   });
 });
+
+/* ---------- flag: pick a country, fetch its flag, embed as a data URL ---------- */
+// flagcdn.com serves CORS-enabled PNGs, so the fetched blob can be canvas-exported
+// safely once turned into a data: URL (same path as the uploaded-photo flow above).
+const flagSelect = document.getElementById('flagSelect');
+async function applyFlag(code){
+  if(!code) return;
+  try{
+    const res = await fetch(`https://flagcdn.com/w320/${code}.png`);
+    const blob = await res.blob();
+    const r = new FileReader();
+    r.onload = () => setImage('Flag Image', r.result);
+    r.readAsDataURL(blob);
+  }catch(err){ console.error('flag fetch failed', err); }
+}
+flagSelect.addEventListener('change', ()=> applyFlag(flagSelect.value));
 
 /* ---------- seed control values from the SVG's current text ---------- */
 function seed(){
