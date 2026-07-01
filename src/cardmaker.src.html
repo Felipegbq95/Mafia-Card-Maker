@@ -204,7 +204,7 @@ function setSingleLine(el, str, xOverride){
 
 /* ---------- images: turn pattern-filled rects into plain cover-fit <image> ---------- */
 const imgSlots = {};  // layerId -> <image> element we control
-function initImageSlot(layerId){
+function initImageSlot(layerId, align){
   const g = byId(layerId); if(!g) return;
   // find the rect that paints a pattern, and the pattern's source <image>
   const rect = g.querySelector('rect[fill^="url("]') || svg.querySelector('[id="'+CSS.escape(layerId)+'"] rect');
@@ -223,7 +223,7 @@ function initImageSlot(layerId){
   const img = document.createElementNS(SVGNS,'image');
   img.setAttribute('x',x); img.setAttribute('y',y);
   img.setAttribute('width',w); img.setAttribute('height',h);
-  img.setAttribute('preserveAspectRatio','xMidYMid slice'); // = object-fit: cover
+  img.setAttribute('preserveAspectRatio', (align || 'xMidYMid') + ' slice'); // = object-fit: cover
   img.setAttributeNS(XLINK,'href',href); img.setAttribute('href',href);
   rect.replaceWith(img);
   imgSlots[layerId] = img;
@@ -418,7 +418,11 @@ document.getElementById('addAbilityBtn').addEventListener('click', ()=>{
 initFit('Character Name', 239, 388);
 initFit('Character Role', 239, 388);
 initFit('Player Alignment', 239, 388);
-['Character Image','Flag Image'].forEach(initImageSlot);
+// Character Image crops from the top (keep the head, cut off the legs) since real player
+// photos are full-body shots much taller than the card's photo frame; a centered crop
+// would land on the torso instead. Flag Image stays centered (flags are simple rectangles).
+initImageSlot('Character Image', 'xMidYMin');
+initImageSlot('Flag Image');
 
 document.querySelectorAll('[data-text]').forEach(c=>{
   c.addEventListener('input', ()=> setText(c.dataset.text, c.value));

@@ -235,8 +235,8 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
 </g>
 </g>
 <g id="Ability Info">
-<text id="Ability Name - Night" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="32" letter-spacing="0em"><tspan x="673.275" y="277.38">Ability Name - Night</tspan></text>
-<text id="Ability Description" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="19.8" letter-spacing="0em"><tspan x="673.275" y="312.732">Each night, choose a player to do a thing and that player will </tspan><tspan x="673.275" y="347.732">become dusted. Each time we do a dusted we explode the ball. </tspan></text>
+<text id="Ability Name - Night" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="32" letter-spacing="0em"><tspan x="673.275" y="261.38">Ability Name - Night</tspan></text>
+<text id="Ability Description" fill="black" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="19.8" letter-spacing="0em"><tspan x="673.275" y="296.732">Each night, choose a player to do a thing and that player will </tspan><tspan x="673.275" y="331.732">become dusted. Each time we do a dusted we explode the ball. </tspan></text>
 </g>
 </g>
 <rect x="495.775" y="229" width="875" height="153" rx="17.5" stroke="#D9D9D9"/>
@@ -418,7 +418,7 @@ function setSingleLine(el, str, xOverride){
 
 /* ---------- images: turn pattern-filled rects into plain cover-fit <image> ---------- */
 const imgSlots = {};  // layerId -> <image> element we control
-function initImageSlot(layerId){
+function initImageSlot(layerId, align){
   const g = byId(layerId); if(!g) return;
   // find the rect that paints a pattern, and the pattern's source <image>
   const rect = g.querySelector('rect[fill^="url("]') || svg.querySelector('[id="'+CSS.escape(layerId)+'"] rect');
@@ -437,7 +437,7 @@ function initImageSlot(layerId){
   const img = document.createElementNS(SVGNS,'image');
   img.setAttribute('x',x); img.setAttribute('y',y);
   img.setAttribute('width',w); img.setAttribute('height',h);
-  img.setAttribute('preserveAspectRatio','xMidYMid slice'); // = object-fit: cover
+  img.setAttribute('preserveAspectRatio', (align || 'xMidYMid') + ' slice'); // = object-fit: cover
   img.setAttributeNS(XLINK,'href',href); img.setAttribute('href',href);
   rect.replaceWith(img);
   imgSlots[layerId] = img;
@@ -632,7 +632,11 @@ document.getElementById('addAbilityBtn').addEventListener('click', ()=>{
 initFit('Character Name', 239, 388);
 initFit('Character Role', 239, 388);
 initFit('Player Alignment', 239, 388);
-['Character Image','Flag Image'].forEach(initImageSlot);
+// Character Image crops from the top (keep the head, cut off the legs) since real player
+// photos are full-body shots much taller than the card's photo frame; a centered crop
+// would land on the torso instead. Flag Image stays centered (flags are simple rectangles).
+initImageSlot('Character Image', 'xMidYMin');
+initImageSlot('Flag Image');
 
 document.querySelectorAll('[data-text]').forEach(c=>{
   c.addEventListener('input', ()=> setText(c.dataset.text, c.value));
