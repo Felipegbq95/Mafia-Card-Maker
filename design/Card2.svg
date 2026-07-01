@@ -86,7 +86,7 @@
 <rect x="41.5166" y="112.098" width="103" height="69" stroke="#E4E8F0"/>
 </g>
 <g id="Character Image">
-<rect width="395.458" height="388" transform="translate(41.0166 111.598)" fill="url(#pattern11_0_1)"/>
+<rect width="395.458" height="409" transform="translate(41.0166 111.598)" fill="url(#pattern11_0_1)"/>
 <text id="Player Name" fill="#BC0000" style="white-space: pre" xml:space="preserve" font-family="FWC2026" font-size="44" font-weight="bold" letter-spacing="0em"><tspan x="301.465" y="162.46">KARTHAIN</tspan></text>
 </g>
 </g>
