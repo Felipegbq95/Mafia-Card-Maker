@@ -45,6 +45,8 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
 .hint{font-size:11px;color:var(--mut);margin:8px 2px 0;line-height:1.4}
 .secHead{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 8px;
   font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c2cad6}
+.toggleRow{display:flex;align-items:center;gap:8px;margin:0 2px 10px;font-size:12px;color:var(--ink);cursor:pointer}
+.toggleRow input{width:auto}
 .abcard{border:1px solid var(--line);border-radius:10px;padding:11px;margin:0 0 10px;background:#1a202b}
 .abcard b{display:block;font-size:12px;color:#c9d2e0;margin:0 0 8px}
 
@@ -82,6 +84,10 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
       <span>Actions</span>
       <button type="button" class="mini" id="addAbilityBtn">+ Add action</button>
     </div>
+    <label class="toggleRow">
+      <input type="checkbox" id="showIconsToggle" checked>
+      <span>Show icons <span class="hint" style="margin:0">(off = text uses the full width, with roomier padding)</span></span>
+    </label>
     <div id="abilitiesControls"></div>
 
     <details class="grp" open>
@@ -405,10 +411,10 @@ function setWrappedEl(t, m, str){
     t.appendChild(ts);
   });
 }
-function setSingleLine(el, str, xOverride){
+function setSingleLine(el, str, xOverride, yOverride){
   const first = el.querySelector('tspan');
   const x = xOverride ?? (first ? first.getAttribute('x') : 0);
-  const y = first ? first.getAttribute('y') : 0;
+  const y = yOverride ?? (first ? first.getAttribute('y') : 0);
   while(el.firstChild) el.removeChild(el.firstChild);
   const ts = document.createElementNS(SVGNS,'tspan');
   ts.setAttribute('x', x); ts.setAttribute('y', y);
@@ -486,9 +492,16 @@ const ABILITY_RADIUS = 18; // matches the box's own rx, so a custom icon's round
 // custom-icon photo slot: full box height, flush left, rounded to match the box's own
 // left corners, square where it meets the text (like a card thumbnail)
 const ABILITY_ICON = { x: ABILITY_X, y: ABILITY_TEMPLATE_Y, w: ABILITY_H, h: ABILITY_H, r: ABILITY_RADIUS };
-const ABILITY_TEXT_X = ABILITY_ICON.x + ABILITY_ICON.w + 24;
 const ABILITY_TEXT_RIGHT_PAD = 30;
-const ABILITY_TEXT_MAXW = (ABILITY_X + ABILITY_W) - ABILITY_TEXT_X - ABILITY_TEXT_RIGHT_PAD;
+// Two text layouts: one leaving room for the icon photo slot, one using the full width
+// when icons are toggled off. Y offsets are measured from the box's own top edge so they
+// still work after the box is repositioned/scaled. Both are sized to keep a worst-case
+// 3-line description clear of the box's bottom edge with a comfortable margin.
+const ABILITY_LAYOUT = {
+  icon:   { textX: ABILITY_ICON.x + ABILITY_ICON.w + 24, titleOffsetY: 32.88, descGap: 35.352, lh: 35 },
+  noIcon: { textX: ABILITY_X + 40,                        titleOffsetY: 38,    descGap: 35,     lh: 33 },
+};
+function abilityTextMaxw(textX){ return (ABILITY_X + ABILITY_W) - textX - ABILITY_TEXT_RIGHT_PAD; }
 
 // path for a rect rounded only on its left side (top-right/bottom-right stay square) —
 // used to clip a full-bleed icon photo so it blends into the box's own rounded corner
@@ -516,10 +529,15 @@ let abilities = [
   { title: 'Ability Name - Night', desc: 'Each night, choose a player to do a thing and that player will become dusted. Each time we do a dusted we explode the ball.', icon: null },
 ];
 let abilityRefs = []; // per-index {titleEl, descEl, wrapMeta}, refreshed on every structural render
+let showIcons = true; // global toggle: icon photo slot + doodle, vs. text using the full width
 
 function renderAbilityBoxes(){
   while(abilitiesGroup.firstChild) abilitiesGroup.removeChild(abilitiesGroup.firstChild);
   const { ys, s } = abilityLayout(abilities.length);
+  const layout = ABILITY_LAYOUT[showIcons ? 'icon' : 'noIcon'];
+  const titleY = ABILITY_TEMPLATE_Y + layout.titleOffsetY;
+  const descY0 = titleY + layout.descGap;
+  const maxw = abilityTextMaxw(layout.textX);
   abilityRefs = abilities.map((a,i)=>{
     const clone = abilityTemplate.cloneNode(true);
     const wrapper = document.createElementNS(SVGNS,'g');
@@ -531,18 +549,22 @@ function renderAbilityBoxes(){
 
     const titleEl = clone.querySelector('[id="Ability Name - Night"]');
     const descEl  = clone.querySelector('[id="Ability Description"]');
-    const iconDoodle = clone.querySelector('[id="proicons:soccer"]');
     const iconGroup  = clone.querySelector('[id="Ability Image"]');
 
-    // the sample text's own rendered width no longer reflects the real text-box width
-    // now that the icon photo slot is wider, so override x/maxw with real geometry
+    // the sample text's own rendered position/width no longer reflects the real text-box
+    // geometry once the icon slot is resized or hidden, so override with real numbers
     const wrapMeta = computeWrapMeta(descEl);
-    wrapMeta.x = ABILITY_TEXT_X;
-    wrapMeta.maxw = ABILITY_TEXT_MAXW;
-    setSingleLine(titleEl, a.title, ABILITY_TEXT_X);
+    wrapMeta.x = layout.textX;
+    wrapMeta.y0 = descY0;
+    wrapMeta.lh = layout.lh;
+    wrapMeta.maxw = maxw;
+    setSingleLine(titleEl, a.title, layout.textX, titleY);
     setWrappedEl(descEl, wrapMeta, a.desc);
 
-    if(a.icon){
+    if(!showIcons){
+      iconGroup.style.display = 'none';
+    } else if(a.icon){
+      const iconDoodle = clone.querySelector('[id="proicons:soccer"]');
       iconDoodle.style.display = 'none';
       const clipId = `ability-icon-clip-${i}`;
       const clip = document.createElementNS(SVGNS,'clipPath');
@@ -567,7 +589,8 @@ function renderAbilityBoxes(){
 }
 function updateAbilityText(i){
   const ref = abilityRefs[i]; if(!ref) return;
-  setSingleLine(ref.titleEl, abilities[i].title, ABILITY_TEXT_X);
+  const layout = ABILITY_LAYOUT[showIcons ? 'icon' : 'noIcon'];
+  setSingleLine(ref.titleEl, abilities[i].title, layout.textX, ABILITY_TEMPLATE_Y + layout.titleOffsetY);
   setWrappedEl(ref.descEl, ref.wrapMeta, abilities[i].desc);
 }
 
@@ -582,8 +605,9 @@ function renderAbilityControls(){
       <div class="gb">
         <label class="f"><span>Title</span><input type="text" class="ability-title" data-i="${i}"></label>
         <label class="f"><span>Description</span><textarea class="ability-desc" data-i="${i}"></textarea></label>
+        ${showIcons ? `
         <label class="f"><span>Icon (optional, replaces the ball doodle)</span><input type="file" accept="image/*" class="ability-icon" data-i="${i}"></label>
-        ${a.icon ? `<button type="button" class="mini ability-icon-reset" data-i="${i}">Use default icon</button>` : ''}
+        ${a.icon ? `<button type="button" class="mini ability-icon-reset" data-i="${i}">Use default icon</button>` : ''}` : ''}
       </div>`;
     wrap.appendChild(details);
   });
@@ -624,6 +648,10 @@ function renderAbilityControls(){
 document.getElementById('addAbilityBtn').addEventListener('click', ()=>{
   if(abilities.length >= 5) return;
   abilities.push({ title:'', desc:'', icon:null });
+  renderAbilityBoxes(); renderAbilityControls();
+});
+document.getElementById('showIconsToggle').addEventListener('change', e=>{
+  showIcons = e.target.checked;
   renderAbilityBoxes(); renderAbilityControls();
 });
 

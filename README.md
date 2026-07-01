@@ -65,6 +65,11 @@ auto-scales down uniformly (not just squished) to keep everything on the card. E
 also take a custom icon upload, rendered full-bleed on the left (rounded to match the box's own
 corner, square where it meets the text) in place of the default ball doodle.
 
+The "Show icons" toggle above the action list switches all actions at once between that
+icon-slot layout and a text-only one (`ABILITY_LAYOUT.icon` / `.noIcon` in
+`src/cardmaker.src.html`) that uses the full box width and roomier top/bottom padding, since
+there's more space to work with once the icon column is gone.
+
 Selecting **Alignment** (Town/Mafia/Third Party) also recolors the Player Name/Character Name/
 Character Role/Player Alignment text and swaps the card's background image — see `ALIGN_CFG` in
 `src/cardmaker.src.html`. The three background images live in `design/backgrounds/` and are baked
