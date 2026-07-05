@@ -69,7 +69,7 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
     <details class="grp" open>
       <summary>Identity</summary>
       <div class="gb">
-        <label class="f"><span>Player Name (forum name)</span><input type="text" data-text="Player Name"></label>
+        <label class="f"><span>Player Name (forum name) — Enter for a 2nd line</span><textarea data-lines="Player Name" rows="2"></textarea></label>
         <label class="f"><span>Character Name (footballer)</span><input type="text" data-text="Character Name"></label>
         <label class="f"><span>Character Role (position)</span><input type="text" data-text="Character Role"></label>
         <label class="f"><span>Character Type (top right, optional)</span><input type="text" data-text="Character Type"></label>
@@ -375,6 +375,28 @@ function setText(id, str){
   }
 }
 
+/* ---------- text: right-aligned, user-controlled line breaks (Enter key) ---------- */
+// unlike setWrapped (auto word-wrap by width), this splits on literal "\n"s the user typed,
+// so they control exactly where a name breaks instead of us guessing.
+const linesCfg = {}; // id -> {x, y0, lh}
+function initLinesRight(id, x, lh){
+  const t = byId(id); if(!t) return;
+  const first = t.querySelector('tspan');
+  linesCfg[id] = {x, y0: first ? parseFloat(first.getAttribute('y')) : 0, lh};
+  t.setAttribute('text-anchor', 'end');
+  if(first) first.setAttribute('x', x); // reposition the baked default immediately, not just on next edit
+}
+function setLinesRight(id, str){
+  const t = byId(id), cfg = linesCfg[id]; if(!t || !cfg) return;
+  while(t.firstChild) t.removeChild(t.firstChild);
+  str.split('\n').forEach((ln, i)=>{
+    const ts = document.createElementNS(SVGNS,'tspan');
+    ts.setAttribute('x', cfg.x); ts.setAttribute('y', cfg.y0 + i*cfg.lh);
+    ts.textContent = ln;
+    t.appendChild(ts);
+  });
+}
+
 /* ---------- text: wrapping layers (used by the actions below) ---------- */
 // generalized to work on any text element directly, since actions are cloned at runtime
 // rather than looked up by a fixed id.
@@ -677,9 +699,15 @@ initFit('Player Alignment', 239, 388);
 // would land on the torso instead. Flag Image stays centered (flags are simple rectangles).
 initImageSlot('Character Image', 'xMidYMin');
 initImageSlot('Flag Image');
+// Player Name (right-aligned to the photo's right edge, minus a little breathing room) —
+// press Enter in its control to split it onto a second line instead of overflowing.
+initLinesRight('Player Name', 428, 52);
 
 document.querySelectorAll('[data-text]').forEach(c=>{
   c.addEventListener('input', ()=> setText(c.dataset.text, c.value));
+});
+document.querySelectorAll('[data-lines]').forEach(c=>{
+  c.addEventListener('input', ()=> setLinesRight(c.dataset.lines, c.value));
 });
 const alignmentSelect = document.getElementById('alignmentSelect');
 alignmentSelect.addEventListener('input', ()=> applyAlignment(alignmentSelect.value));
@@ -774,6 +802,10 @@ function seed(){
   document.querySelectorAll('[data-text]').forEach(c=>{
     const t = byId(c.dataset.text);
     if(t) c.value = t.textContent.trim();
+  });
+  document.querySelectorAll('[data-lines]').forEach(c=>{
+    const t = byId(c.dataset.lines);
+    if(t) c.value = [...t.querySelectorAll('tspan')].map(s=>s.textContent).join('\n');
   });
 }
 seed();

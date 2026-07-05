@@ -54,6 +54,10 @@ right edge below it, styled to match the "FIFA WORLD CUP 2026™" wordmark on it
 to fit (see `initFit`'s `anchor` param) so it never overlaps the wordmark, measured against the
 wordmark's actual rendered width at runtime rather than a hardcoded guess.
 
+`Player Name` is right-aligned (not auto-shrunk) and supports a user-typed line break — its
+control is a textarea, and pressing Enter splits it onto a second line via `initLinesRight`/
+`setLinesRight` instead of auto word-wrapping, so you control exactly where a long name breaks.
+
 **Country / Player autofill:** the Images panel has a Country dropdown (the 48 World Cup 2026
 teams, from `assets/players.json`, baked into `cardmaker.html` at build time) and a dependent
 Player dropdown listing that country's 26-player roster. Picking a country fetches its flag from
