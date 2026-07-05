@@ -57,7 +57,9 @@ wordmark's actual rendered width at runtime rather than a hardcoded guess.
 `Player Name` is right-aligned (not auto-shrunk) and supports a user-typed line break — its
 control is a textarea, and pressing Enter splits it onto a second line via `initLinesRight`/
 `setLinesRight` instead of auto word-wrapping, so you control exactly where a long name breaks.
-Its line height is set in `initLinesRight('Player Name', 428, 52 * 2/3)`.
+Its line height is set in `initLinesRight('Player Name', 428, 52 * 2/3)`. Multiple lines are
+centered as a block around that `y0` (not anchored at the top), so it always lines up with the
+flag next to it whether it's 1 line or 2.
 
 **Country / Player autofill:** the Images panel has a Country dropdown (the 48 World Cup 2026
 teams, from `assets/players.json`, baked into `cardmaker.html` at build time) and a dependent
@@ -84,7 +86,10 @@ doodle; the icon's width is fixed but its height follows the box's hugged height
 The "Show icons" toggle above the action list switches all actions at once between that
 icon-slot layout and a text-only one (`ABILITY_LAYOUT.icon` / `.noIcon` in
 `src/cardmaker.src.html`) that uses the full box width and roomier top/bottom padding, since
-there's more space to work with once the icon column is gone.
+there's more space to work with once the icon column is gone. When icons are off, two number
+inputs appear ("No-icon: top/bottom padding") that edit `ABILITY_LAYOUT.noIcon.topPad`/
+`bottomPad` live and re-render on every keystroke — a quick way to dial in the no-icon spacing
+by eye without a code change each time.
 
 Selecting **Alignment** (Town/Mafia/Third Party) also recolors the Player Name/Character Name/
 Character Role/Player Alignment text and swaps the card's background image — see `ALIGN_CFG` in
