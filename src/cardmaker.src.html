@@ -81,20 +81,6 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
       </div>
     </details>
 
-    <div class="secHead">
-      <span>Actions</span>
-      <button type="button" class="mini" id="addAbilityBtn">+ Add action</button>
-    </div>
-    <label class="toggleRow">
-      <input type="checkbox" id="showIconsToggle" checked>
-      <span>Show icons <span class="hint" style="margin:0">(off = text uses the full width, with roomier padding)</span></span>
-    </label>
-    <div class="gb" id="noIconPaddingTuner" style="display:none;padding:0 2px 10px">
-      <label class="f"><span>No-icon: top padding (px)</span><input type="number" id="noIconTopPad" step="1"></label>
-      <label class="f"><span>No-icon: bottom padding (px)</span><input type="number" id="noIconBottomPad" step="1"></label>
-    </div>
-    <div id="abilitiesControls"></div>
-
     <details class="grp" open>
       <summary>Images</summary>
       <div class="gb">
@@ -115,6 +101,20 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
           Pick "Other (custom)" to leave the flag/photo alone and just type your own name/role.</p>
       </div>
     </details>
+
+    <div class="secHead">
+      <span>Actions</span>
+      <button type="button" class="mini" id="addAbilityBtn">+ Add action</button>
+    </div>
+    <label class="toggleRow">
+      <input type="checkbox" id="showIconsToggle" checked>
+      <span>Show icons <span class="hint" style="margin:0">(off = text uses the full width, with roomier padding)</span></span>
+    </label>
+    <div class="gb" id="noIconPaddingTuner" style="display:none;padding:0 2px 10px">
+      <label class="f"><span>No-icon: top padding (px)</span><input type="number" id="noIconTopPad" step="1"></label>
+      <label class="f"><span>No-icon: bottom padding (px)</span><input type="number" id="noIconBottomPad" step="1"></label>
+    </div>
+    <div id="abilitiesControls"></div>
 
   </div>
   <div class="cFoot">
