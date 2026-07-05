@@ -45,9 +45,14 @@ python -m http.server 8753
 
 ## How the editing works
 Controls in `src/cardmaker.src.html` bind to the Figma layer ids in the SVG:
-`Player Name`, `Character Name`, `Character Role`, `Player Alignment`, `Character Image`,
-`Flag Image`. Text layers become inputs; `Character Image` is an upload slot (cover-fitted).
-Download = serialize the SVG → canvas → PNG (2×).
+`Player Name`, `Character Name`, `Character Role`, `Character Type`, `Player Alignment`,
+`Character Image`, `Flag Image`. Text layers become inputs; `Character Image` is an upload slot
+(cover-fitted). Download = serialize the SVG → canvas → PNG (2×).
+
+`Character Type` sits top-right of the header, right-aligned to line up with the ability boxes'
+right edge below it, styled to match the "FIFA WORLD CUP 2026™" wordmark on its left. It shrinks
+to fit (see `initFit`'s `anchor` param) so it never overlaps the wordmark, measured against the
+wordmark's actual rendered width at runtime rather than a hardcoded guess.
 
 **Country / Player autofill:** the Images panel has a Country dropdown (the 48 World Cup 2026
 teams, from `assets/players.json`, baked into `cardmaker.html` at build time) and a dependent

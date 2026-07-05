@@ -72,6 +72,7 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
         <label class="f"><span>Player Name (forum name)</span><input type="text" data-text="Player Name"></label>
         <label class="f"><span>Character Name (footballer)</span><input type="text" data-text="Character Name"></label>
         <label class="f"><span>Character Role (position)</span><input type="text" data-text="Character Role"></label>
+        <label class="f"><span>Character Type (top right, optional)</span><input type="text" data-text="Character Type"></label>
         <label class="f"><span>Alignment</span>
           <select id="alignmentSelect" data-text="Player Alignment">
             <option>TOWN</option><option>MAFIA</option><option>THIRD PARTY</option>
@@ -132,20 +133,21 @@ const XLINK = 'http://www.w3.org/1999/xlink';
 const byId = id => svg.querySelector('[id="'+CSS.escape(id)+'"]');
 
 /* ---------- text: single-line layers ---------- */
-// fields that should stay centered in the white card and shrink to fit it
-const fitCfg = {};   // id -> {cx, maxw, base}
-function initFit(id, cx, maxw){
+// fields that should stay anchored to a point and shrink to fit a max width. anchor is
+// 'middle' (default, centered on x) or 'end' (right-aligned, x is the right edge).
+const fitCfg = {};   // id -> {x, maxw, base}
+function initFit(id, x, maxw, anchor){
   const t = byId(id); if(!t) return;
-  fitCfg[id] = {cx, maxw, base: parseFloat(t.getAttribute('font-size')||40)};
-  t.setAttribute('text-anchor','middle');
-  const ts = t.querySelector('tspan'); if(ts) ts.setAttribute('x', cx);
+  fitCfg[id] = {x, maxw, base: parseFloat(t.getAttribute('font-size')||40)};
+  t.setAttribute('text-anchor', anchor || 'middle');
+  const ts = t.querySelector('tspan'); if(ts) ts.setAttribute('x', x);
 }
 function setText(id, str){
   const t = byId(id); if(!t) return;
   const cfg = fitCfg[id];
   const first = t.querySelector('tspan');
   const y = first ? first.getAttribute('y') : (t.getAttribute('y') || 0);
-  const x = cfg ? cfg.cx : (first ? first.getAttribute('x') : 0);
+  const x = cfg ? cfg.x : (first ? first.getAttribute('x') : 0);
   while(t.firstChild) t.removeChild(t.firstChild);
   const ts = document.createElementNS(SVGNS,'tspan');
   ts.setAttribute('x', x); ts.setAttribute('y', y);
@@ -446,6 +448,15 @@ document.getElementById('showIconsToggle').addEventListener('change', e=>{
 initFit('Character Name', 239, 388);
 initFit('Character Role', 239, 388);
 initFit('Player Alignment', 239, 388);
+// "Character Type" sits top-right of the header, right-aligned so its right edge lines up
+// with the ability boxes' right edge (495.275 + 876 = 1371.275) below it. Shrinks to fit
+// whatever room is left of the "FIFA WORLD CUP 2026™" wordmark, measured at runtime so it
+// never overlaps regardless of exact font metrics.
+(function(){
+  const wordmark = byId('Logo + Text').querySelector('text tspan');
+  const wordmarkRight = wordmark ? parseFloat(wordmark.getAttribute('x')) + wordmark.getComputedTextLength() : 460;
+  initFit('Character Type', 1371.275, 1371.275 - wordmarkRight - 40, 'end');
+})();
 // Character Image crops from the top (keep the head, cut off the legs) since real player
 // photos are full-body shots much taller than the card's photo frame; a centered crop
 // would land on the torso instead. Flag Image stays centered (flags are simple rectangles).
