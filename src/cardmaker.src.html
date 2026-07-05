@@ -296,20 +296,21 @@ const abilitiesGroup = byId('Abilities');
 const abilityTemplate = byId('Ability 1');
 abilityTemplate.remove();
 const ABILITY_X = 495.275, ABILITY_W = 876, ABILITY_CX = ABILITY_X + ABILITY_W/2;
-const ABILITY_TEMPLATE_Y = 228.5, ABILITY_H = 154, ABILITY_GAP = 15;
+const ABILITY_TEMPLATE_Y = 228.5, ABILITY_GAP = 15;
 const ABILITY_SECTION_TOP = 84, ABILITY_SECTION_BOTTOM = 733; // header/footer separators are at y=62.5 / y=754
 const ABILITY_RADIUS = 18; // matches the box's own rx, so a custom icon's rounded edge blends into its corner
-// custom-icon photo slot: full box height, flush left, rounded to match the box's own
-// left corners, square where it meets the text (like a card thumbnail)
-const ABILITY_ICON = { x: ABILITY_X, y: ABILITY_TEMPLATE_Y, w: ABILITY_H, h: ABILITY_H, r: ABILITY_RADIUS };
+// custom-icon photo slot: flush left, full box height (set per-box below since boxes now
+// hug their content), rounded to match the box's own left corners, square where it meets
+// the text (like a card thumbnail). Width is fixed regardless of box height.
+const ABILITY_ICON_X = ABILITY_X, ABILITY_ICON_W = 154;
 const ABILITY_TEXT_RIGHT_PAD = 30;
 // Two text layouts: one leaving room for the icon photo slot, one using the full width
 // when icons are toggled off. Y offsets are measured from the box's own top edge so they
-// still work after the box is repositioned/scaled. Both are sized to keep a worst-case
-// 3-line description clear of the box's bottom edge with a comfortable margin.
+// still work after the box is repositioned/scaled. topPad/bottomPad are symmetric so each
+// box hugs its content evenly instead of a fixed height leaving empty space below.
 const ABILITY_LAYOUT = {
-  icon:   { textX: ABILITY_ICON.x + ABILITY_ICON.w + 24, titleOffsetY: 32.88, descGap: 35.352, lh: 35 },
-  noIcon: { textX: ABILITY_X + 40,                        titleOffsetY: 38,    descGap: 35,     lh: 33 },
+  icon:   { textX: ABILITY_ICON_X + ABILITY_ICON_W + 24, topPad: 54.8,  bottomPad: 54.8,  descGap: 35.352, lh: 35 },
+  noIcon: { textX: ABILITY_X + 40,                        topPad: 63.33, bottomPad: 63.33, descGap: 35,     lh: 33 },
 };
 function abilityTextMaxw(textX){ return (ABILITY_X + ABILITY_W) - textX - ABILITY_TEXT_RIGHT_PAD; }
 
@@ -321,48 +322,38 @@ function roundedLeftRectPath(x, y, w, h, r){
        + `V${y+r} A${r},${r} 0 0 1 ${x+r},${y} Z`;
 }
 
-// At full size (154px + 15px gap), only 3 actions fit the available band; 4-5 need to
-// shrink. Scale uniformly (not just height) so text and the icon don't distort.
-function abilityLayout(n){
-  const avail = ABILITY_SECTION_BOTTOM - ABILITY_SECTION_TOP;
-  const naturalTotal = n*ABILITY_H + (n-1)*ABILITY_GAP;
-  const s = naturalTotal > avail ? avail/naturalTotal : 1;
-  const boxH = ABILITY_H*s, gap = ABILITY_GAP*s;
-  const totalH = n*boxH + (n-1)*gap;
-  const start = ABILITY_SECTION_TOP + Math.max(0, (avail-totalH)/2);
-  const ys = Array.from({length:n}, (_,i)=> start + i*(boxH+gap));
-  return { ys, s };
-}
-
 let abilities = [
   { title: 'Ability Name - Night', desc: 'Each night, choose a player to do a thing and that player will become dusted. Each time we do a dusted we explode the ball.', icon: null },
   { title: 'Ability Name - Night', desc: 'Each night, choose a player to do a thing and that player will become dusted. Each time we do a dusted we explode the ball.', icon: null },
 ];
-let abilityRefs = []; // per-index {titleEl, descEl, wrapMeta}, refreshed on every structural render
 let showIcons = true; // global toggle: icon photo slot + doodle, vs. text using the full width
 
+// Each box hugs its own content (title + however many description lines it wraps to)
+// instead of a fixed height, so a short ability doesn't leave a big empty gap. Every
+// text edit can change a box's height, which can shift every box below it, so this does
+// a full rebuild rather than patching text in place -- cheap enough for up to 5 boxes.
 function renderAbilityBoxes(){
   while(abilitiesGroup.firstChild) abilitiesGroup.removeChild(abilitiesGroup.firstChild);
-  const { ys, s } = abilityLayout(abilities.length);
   const layout = ABILITY_LAYOUT[showIcons ? 'icon' : 'noIcon'];
-  const titleY = ABILITY_TEMPLATE_Y + layout.titleOffsetY;
-  const descY0 = titleY + layout.descGap;
   const maxw = abilityTextMaxw(layout.textX);
-  abilityRefs = abilities.map((a,i)=>{
+  const titleY = ABILITY_TEMPLATE_Y + layout.topPad;
+  const descY0 = titleY + layout.descGap;
+
+  // Phase 1: build each box at its natural (unscaled) size, measuring how many
+  // description lines it wraps to so we know how tall it needs to be.
+  const built = abilities.map((a,i)=>{
     const clone = abilityTemplate.cloneNode(true);
     const wrapper = document.createElementNS(SVGNS,'g');
-    // scale (uniformly) around the box's own top-center, then move that anchor to ys[i]
-    wrapper.setAttribute('transform',
-      `translate(${ABILITY_CX},${ys[i]}) scale(${s}) translate(${-ABILITY_CX},${-ABILITY_TEMPLATE_Y})`);
     wrapper.appendChild(clone);
     abilitiesGroup.appendChild(wrapper); // attach before measuring text, getComputedTextLength needs a rendered element
 
     const titleEl = clone.querySelector('[id="Ability Name - Night"]');
     const descEl  = clone.querySelector('[id="Ability Description"]');
     const iconGroup  = clone.querySelector('[id="Ability Image"]');
+    const clipGroup  = clone.querySelector('[clip-path]');
+    const fillRect   = clipGroup.querySelector('rect');
+    const strokeRect = clone.querySelector('rect[stroke]');
 
-    // the sample text's own rendered position/width no longer reflects the real text-box
-    // geometry once the icon slot is resized or hidden, so override with real numbers
     const wrapMeta = computeWrapMeta(descEl);
     wrapMeta.x = layout.textX;
     wrapMeta.y0 = descY0;
@@ -370,38 +361,61 @@ function renderAbilityBoxes(){
     wrapMeta.maxw = maxw;
     setSingleLine(titleEl, a.title, layout.textX, titleY);
     setWrappedEl(descEl, wrapMeta, a.desc);
+    const numLines = Math.max(1, descEl.querySelectorAll('tspan').length);
+    const H = layout.topPad + layout.descGap + (numLines-1)*layout.lh + layout.bottomPad;
+
+    fillRect.setAttribute('height', H);
+    strokeRect.setAttribute('height', H-1);
+    const clipId = `ability-box-clip-${i}`;
+    const clipDef = document.createElementNS(SVGNS,'clipPath');
+    clipDef.setAttribute('id', clipId);
+    const clipRect = document.createElementNS(SVGNS,'rect');
+    clipRect.setAttribute('x', ABILITY_X); clipRect.setAttribute('y', ABILITY_TEMPLATE_Y);
+    clipRect.setAttribute('width', ABILITY_W); clipRect.setAttribute('height', H); clipRect.setAttribute('rx', ABILITY_RADIUS);
+    clipDef.appendChild(clipRect);
+    clipGroup.appendChild(clipDef);
+    clipGroup.setAttribute('clip-path', `url(#${clipId})`);
 
     if(!showIcons){
       iconGroup.style.display = 'none';
     } else if(a.icon){
       const iconDoodle = clone.querySelector('[id="proicons:soccer"]');
       iconDoodle.style.display = 'none';
-      const clipId = `ability-icon-clip-${i}`;
+      const iconClipId = `ability-icon-clip-${i}`;
       const clip = document.createElementNS(SVGNS,'clipPath');
-      clip.setAttribute('id', clipId);
+      clip.setAttribute('id', iconClipId);
       const clipPath = document.createElementNS(SVGNS,'path');
-      clipPath.setAttribute('d', roundedLeftRectPath(ABILITY_ICON.x, ABILITY_ICON.y, ABILITY_ICON.w, ABILITY_ICON.h, ABILITY_ICON.r));
+      clipPath.setAttribute('d', roundedLeftRectPath(ABILITY_ICON_X, ABILITY_TEMPLATE_Y, ABILITY_ICON_W, H, ABILITY_RADIUS));
       clip.appendChild(clipPath);
       iconGroup.appendChild(clip);
 
       const img = document.createElementNS(SVGNS,'image');
-      img.setAttribute('x', ABILITY_ICON.x); img.setAttribute('y', ABILITY_ICON.y);
-      img.setAttribute('width', ABILITY_ICON.w); img.setAttribute('height', ABILITY_ICON.h);
+      img.setAttribute('x', ABILITY_ICON_X); img.setAttribute('y', ABILITY_TEMPLATE_Y);
+      img.setAttribute('width', ABILITY_ICON_W); img.setAttribute('height', H);
       img.setAttribute('preserveAspectRatio','xMidYMid slice');
-      img.setAttribute('clip-path', `url(#${clipId})`);
+      img.setAttribute('clip-path', `url(#${iconClipId})`);
       img.setAttributeNS(XLINK,'href', a.icon); img.setAttribute('href', a.icon);
       iconGroup.appendChild(img);
     }
 
     clone.querySelectorAll('[id]').forEach(el => el.id = el.id + '-' + i); // avoid duplicate ids across clones
-    return { titleEl, descEl, wrapMeta };
+    return { wrapper, H };
   });
-}
-function updateAbilityText(i){
-  const ref = abilityRefs[i]; if(!ref) return;
-  const layout = ABILITY_LAYOUT[showIcons ? 'icon' : 'noIcon'];
-  setSingleLine(ref.titleEl, abilities[i].title, layout.textX, ABILITY_TEMPLATE_Y + layout.titleOffsetY);
-  setWrappedEl(ref.descEl, ref.wrapMeta, abilities[i].desc);
+
+  // Phase 2: now every box's natural height is known, so lay them out as a group
+  // (scaling uniformly if they don't all fit) and move each into its final position.
+  const avail = ABILITY_SECTION_BOTTOM - ABILITY_SECTION_TOP;
+  const naturalTotal = built.reduce((sum,b)=> sum+b.H, 0) + (built.length-1)*ABILITY_GAP;
+  const s = naturalTotal > avail ? avail/naturalTotal : 1;
+  const scaledGap = ABILITY_GAP*s;
+  const totalH = built.reduce((sum,b)=> sum+b.H*s, 0) + (built.length-1)*scaledGap;
+  let y = ABILITY_SECTION_TOP + Math.max(0, (avail-totalH)/2);
+  built.forEach(b=>{
+    // scale (uniformly) around the box's own top-center, then move that anchor to y
+    b.wrapper.setAttribute('transform',
+      `translate(${ABILITY_CX},${y}) scale(${s}) translate(${-ABILITY_CX},${-ABILITY_TEMPLATE_Y})`);
+    y += b.H*s + scaledGap;
+  });
 }
 
 function renderAbilityControls(){
@@ -424,11 +438,13 @@ function renderAbilityControls(){
 
   wrap.querySelectorAll('.ability-title').forEach(inp=>{
     const i = +inp.dataset.i; inp.value = abilities[i].title;
-    inp.addEventListener('input', ()=>{ abilities[i].title = inp.value; updateAbilityText(i); });
+    // a full rebuild (not just an in-place text update) since a box's hugged height can
+    // change with its content, which can shift every box below it
+    inp.addEventListener('input', ()=>{ abilities[i].title = inp.value; renderAbilityBoxes(); });
   });
   wrap.querySelectorAll('.ability-desc').forEach(ta=>{
     const i = +ta.dataset.i; ta.value = abilities[i].desc;
-    ta.addEventListener('input', ()=>{ abilities[i].desc = ta.value; updateAbilityText(i); });
+    ta.addEventListener('input', ()=>{ abilities[i].desc = ta.value; renderAbilityBoxes(); });
   });
   wrap.querySelectorAll('.ability-icon').forEach(inp=>{
     inp.addEventListener('change', e=>{
@@ -486,7 +502,7 @@ initImageSlot('Character Image', 'xMidYMin');
 initImageSlot('Flag Image');
 // Player Name (right-aligned to the photo's right edge, minus a little breathing room) —
 // press Enter in its control to split it onto a second line instead of overflowing.
-initLinesRight('Player Name', 428, 52);
+initLinesRight('Player Name', 428, 52 * 2/3);
 
 document.querySelectorAll('[data-text]').forEach(c=>{
   c.addEventListener('input', ()=> setText(c.dataset.text, c.value));
