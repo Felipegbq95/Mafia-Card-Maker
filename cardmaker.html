@@ -520,7 +520,11 @@ const abilityTemplate = byId('Ability 1');
 abilityTemplate.remove();
 const ABILITY_X = 495.275, ABILITY_W = 876, ABILITY_CX = ABILITY_X + ABILITY_W/2;
 const ABILITY_TEMPLATE_Y = 228.5, ABILITY_GAP = 15;
-const ABILITY_SECTION_TOP = 84, ABILITY_SECTION_BOTTOM = 733; // header/footer separators are at y=62.5 / y=754
+// Bound the centering band to the left player badge's own extent, not an arbitrary margin
+// off the header/footer separators: top matches the badge's rounded top edge (its curved
+// top apex sits at y~71.5), bottom matches the badge's bottom tip (708.503) -- the alignment
+// text (y=677.978) sits comfortably inside that range already.
+const ABILITY_SECTION_TOP = 71.5, ABILITY_SECTION_BOTTOM = 708.5;
 const ABILITY_RADIUS = 18; // matches the box's own rx, so a custom icon's rounded edge blends into its corner
 // custom-icon photo slot: flush left, full box height (set per-box below since boxes now
 // hug their content), rounded to match the box's own left corners, square where it meets
