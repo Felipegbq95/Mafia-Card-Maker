@@ -213,14 +213,20 @@ function measure(t, str){
 }
 function setWrappedEl(t, m, str){
   if(!t || !m) return;
-  const words = str.replace(/\s+/g,' ').trim().split(' ');
-  const lines = []; let cur = '';
-  for(const w of words){
-    const test = cur ? cur+' '+w : w;
-    if(cur && measure(t, test) > m.maxw){ lines.push(cur); cur = w; }
-    else cur = test;
-  }
-  if(cur) lines.push(cur);
+  // user-typed "\n"s are honored as forced breaks; each resulting paragraph is then still
+  // auto-wrapped by width, so a manual break never fights with the box's fixed width.
+  const lines = [];
+  str.split('\n').forEach(para=>{
+    const words = para.replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+    if(words.length === 0){ lines.push(''); return; } // preserve an intentional blank line
+    let cur = '';
+    for(const w of words){
+      const test = cur ? cur+' '+w : w;
+      if(cur && measure(t, test) > m.maxw){ lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if(cur) lines.push(cur);
+  });
   while(t.firstChild) t.removeChild(t.firstChild);
   lines.forEach((ln,i)=>{
     const ts = document.createElementNS(SVGNS,'tspan');

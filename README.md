@@ -72,7 +72,10 @@ Character photo / Flag photo upload inputs always override whatever was auto-fil
 **Actions:** a repeatable list of 1-5 (add/remove in the panel), driven by `abilities` in
 `src/cardmaker.src.html`. Each is a runtime clone of the single "Ability 1" template in
 `design/Card2.svg`, positioned by a wrapping `<g transform>` so no per-clone id rewriting is
-needed. Each box *hugs its own content* — height is computed from `ABILITY_LAYOUT`'s
+needed. The description honors manual line breaks (`\n`s the user typed) as forced paragraph
+breaks — including intentional blank lines — and each resulting paragraph is still auto-wrapped
+by width (`setWrappedEl` in `src/cardmaker.src.html`), so a manual break never fights with the
+box's fixed width. Each box *hugs its own content* — height is computed from `ABILITY_LAYOUT`'s
 `topPad`/`bottomPad`/`descGap`/`lh` plus however many lines the description wraps to (a per-box
 clip-path and rect height, not a fixed constant), so a short ability doesn't leave a big empty
 gap. The whole group then centers itself within the card's header-to-footer band, and
