@@ -57,6 +57,7 @@ wordmark's actual rendered width at runtime rather than a hardcoded guess.
 `Player Name` is right-aligned (not auto-shrunk) and supports a user-typed line break — its
 control is a textarea, and pressing Enter splits it onto a second line via `initLinesRight`/
 `setLinesRight` instead of auto word-wrapping, so you control exactly where a long name breaks.
+Its line height is set in `initLinesRight('Player Name', 428, 52 * 2/3)`.
 
 **Country / Player autofill:** the Images panel has a Country dropdown (the 48 World Cup 2026
 teams, from `assets/players.json`, baked into `cardmaker.html` at build time) and a dependent
@@ -69,10 +70,16 @@ Character photo / Flag photo upload inputs always override whatever was auto-fil
 **Actions:** a repeatable list of 1-5 (add/remove in the panel), driven by `abilities` in
 `src/cardmaker.src.html`. Each is a runtime clone of the single "Ability 1" template in
 `design/Card2.svg`, positioned by a wrapping `<g transform>` so no per-clone id rewriting is
-needed. The group centers itself within the card's header-to-footer band; at 4-5 actions it
-auto-scales down uniformly (not just squished) to keep everything on the card. Each action can
-also take a custom icon upload, rendered full-bleed on the left (rounded to match the box's own
-corner, square where it meets the text) in place of the default ball doodle.
+needed. Each box *hugs its own content* — height is computed from `ABILITY_LAYOUT`'s
+`topPad`/`bottomPad`/`descGap`/`lh` plus however many lines the description wraps to (a per-box
+clip-path and rect height, not a fixed constant), so a short ability doesn't leave a big empty
+gap. The whole group then centers itself within the card's header-to-footer band, and
+auto-scales down uniformly (not just squished) if it doesn't fit at natural size. Because a
+box's height can change with its own text, any title/description edit does a full
+`renderAbilityBoxes()` rebuild rather than patching text in place — cheap enough for up to 5
+boxes. Each action can also take a custom icon upload, rendered full-bleed on the left (rounded
+to match the box's own corner, square where it meets the text) in place of the default ball
+doodle; the icon's width is fixed but its height follows the box's hugged height.
 
 The "Show icons" toggle above the action list switches all actions at once between that
 icon-slot layout and a text-only one (`ABILITY_LAYOUT.icon` / `.noIcon` in
