@@ -89,6 +89,10 @@ input[type=file]::file-selector-button{background:var(--panel);border:1px solid 
       <input type="checkbox" id="showIconsToggle" checked>
       <span>Show icons <span class="hint" style="margin:0">(off = text uses the full width, with roomier padding)</span></span>
     </label>
+    <div class="gb" id="noIconPaddingTuner" style="display:none;padding:0 2px 10px">
+      <label class="f"><span>No-icon: top padding (px)</span><input type="number" id="noIconTopPad" step="1"></label>
+      <label class="f"><span>No-icon: bottom padding (px)</span><input type="number" id="noIconBottomPad" step="1"></label>
+    </div>
     <div id="abilitiesControls"></div>
 
     <details class="grp" open>
@@ -174,9 +178,13 @@ function initLinesRight(id, x, lh){
 function setLinesRight(id, str){
   const t = byId(id), cfg = linesCfg[id]; if(!t || !cfg) return;
   while(t.firstChild) t.removeChild(t.firstChild);
-  str.split('\n').forEach((ln, i)=>{
+  const lines = str.split('\n');
+  const n = lines.length;
+  // centered as a block around cfg.y0 (not anchored at the top), so cfg.y0 -- tuned to
+  // line up with the flag -- stays the vertical center whether it's 1 line or 2.
+  lines.forEach((ln, i)=>{
     const ts = document.createElementNS(SVGNS,'tspan');
-    ts.setAttribute('x', cfg.x); ts.setAttribute('y', cfg.y0 + i*cfg.lh);
+    ts.setAttribute('x', cfg.x); ts.setAttribute('y', cfg.y0 + (i - (n-1)/2)*cfg.lh);
     ts.textContent = ln;
     t.appendChild(ts);
   });
@@ -309,8 +317,8 @@ const ABILITY_TEXT_RIGHT_PAD = 30;
 // still work after the box is repositioned/scaled. topPad/bottomPad are symmetric so each
 // box hugs its content evenly instead of a fixed height leaving empty space below.
 const ABILITY_LAYOUT = {
-  icon:   { textX: ABILITY_ICON_X + ABILITY_ICON_W + 24, topPad: 54.8,  bottomPad: 54.8,  descGap: 35.352, lh: 35 },
-  noIcon: { textX: ABILITY_X + 40,                        topPad: 63.33, bottomPad: 63.33, descGap: 35,     lh: 33 },
+  icon:   { textX: ABILITY_ICON_X + ABILITY_ICON_W + 24, topPad: 54.8,   bottomPad: 54.8,   descGap: 35.352, lh: 35 },
+  noIcon: { textX: ABILITY_X + 40,                        topPad: 42.22, bottomPad: 31.67, descGap: 35,     lh: 33 },
 };
 function abilityTextMaxw(textX){ return (ABILITY_X + ABILITY_W) - textX - ABILITY_TEXT_RIGHT_PAD; }
 
@@ -478,8 +486,30 @@ document.getElementById('addAbilityBtn').addEventListener('click', ()=>{
 });
 document.getElementById('showIconsToggle').addEventListener('change', e=>{
   showIcons = e.target.checked;
+  updateNoIconPaddingTuner();
   renderAbilityBoxes(); renderAbilityControls();
 });
+
+// Live tuning for the no-icon layout's top/bottom padding, so it's easy to dial in by eye
+// without needing a code change each time. Only shown in no-icon mode, since that's the
+// only layout these two numbers affect.
+const noIconPaddingTuner = document.getElementById('noIconPaddingTuner');
+const noIconTopPadInput = document.getElementById('noIconTopPad');
+const noIconBottomPadInput = document.getElementById('noIconBottomPad');
+function updateNoIconPaddingTuner(){
+  noIconPaddingTuner.style.display = showIcons ? 'none' : 'block';
+  noIconTopPadInput.value = Math.round(ABILITY_LAYOUT.noIcon.topPad * 100) / 100;
+  noIconBottomPadInput.value = Math.round(ABILITY_LAYOUT.noIcon.bottomPad * 100) / 100;
+}
+noIconTopPadInput.addEventListener('input', ()=>{
+  const v = parseFloat(noIconTopPadInput.value); if(Number.isNaN(v)) return;
+  ABILITY_LAYOUT.noIcon.topPad = v; renderAbilityBoxes();
+});
+noIconBottomPadInput.addEventListener('input', ()=>{
+  const v = parseFloat(noIconBottomPadInput.value); if(Number.isNaN(v)) return;
+  ABILITY_LAYOUT.noIcon.bottomPad = v; renderAbilityBoxes();
+});
+updateNoIconPaddingTuner();
 
 /* ---------- wire controls ---------- */
 // centre + shrink-to-fit the three stacked fields in the white player card
